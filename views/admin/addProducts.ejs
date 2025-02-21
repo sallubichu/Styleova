@@ -1,0 +1,230 @@
+<%- include('../partials/adminHeader') %>
+
+<div class="admin-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3 class="logo">Admin Panel</h3>
+    <ul class="nav">
+      <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="/admin/category"><i class="bi bi-tags"></i> Categories</a></li>
+      <li><a href="/admin/products" class="active"><i class="bi bi-box-seam"></i> Products</a></li>
+      <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
+      <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
+      
+    </ul>
+    <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    <div class="header">
+      <h2>Add Product</h2>
+    </div>
+
+    <!-- Product Form -->
+    <div class="form-container">
+      <form action="/admin/addProducts" method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <div class="mb-3">
+          <label for="name" class="form-label">Product Name</label>
+          <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+        </div>
+    
+ <!-- For rating -->
+<div class="mb-3">
+    <label for="rating" class="form-label">Rating</label>
+    <input type="number" class="form-control" id="rating" name="rating" min="1" max="5" required>
+  </div>
+  
+  <!-- For rate -->
+  <div class="mb-3">
+    <label for="rate" class="form-label">Rate</label>
+    <input type="number" class="form-control" id="rate" name="rate" min="0" step="0.01" required>
+  </div>
+
+        <div class="mb-3">
+          <label for="category" class="form-label">Category</label>
+          <select class="form-select" id="category" name="category" required>
+            <% data.forEach(category => { %>
+              <option value="<%= category.id %>"><%= category.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="images" class="form-label">Images (Max 3)</label>
+          <input type="file" class="form-control" id="images" name="images" accept="image/*" required multiple>
+        </div>
+
+        <div class="mb-3">
+          <div class="image-container" style="display: flex; gap: 10px; max-width: 450px;">
+            <!-- Image previews will be shown here -->
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Product</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<!-- Modal for stock update -->
+<div class="modal fade" id="stockUpdateModal" tabindex="-1" aria-labelledby="stockUpdateModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="stockUpdateModalLabel">Update Stock Quantity</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="stockUpdateForm">
+          <input type="hidden" id="productId" name="productId">
+          <div class="mb-3">
+            <label for="newStock" class="form-label">New Stock Quantity</label>
+            <input type="number" class="form-control" id="newStock" name="newStock" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Stock</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const imageContainer = document.querySelector('.image-container');
+  const imageInput = document.querySelector('#images');
+
+  imageInput.addEventListener('change', (event) => {
+    const files = event.target.files;
+    imageContainer.innerHTML = ''; // Clear previous images
+
+    const maxImages = 3;
+    const totalImages = files.length > maxImages ? maxImages : files.length;
+
+    for (let i = 0; i < totalImages; i++) {
+      const file = files[i];
+      if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+        const image = new Image();
+        image.src = URL.createObjectURL(file);
+
+        image.onload = () => {
+          const imageElement = document.createElement('div');
+          imageElement.classList.add('image-element');
+          imageElement.style.height = '150px';
+          imageElement.style.width = '150px';
+          imageElement.style.position = 'relative';
+
+          const imageWrapper = document.createElement('img');
+          imageWrapper.classList.add('img-fluid', 'img-thumbnail');
+          imageWrapper.style.height = '100%';
+          imageWrapper.style.width = '100%';
+          imageWrapper.style.objectFit = 'contain';
+          imageWrapper.src = image.src;
+
+          imageElement.appendChild(imageWrapper);
+
+          const deleteButton = document.createElement('button');
+          deleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'delete-button');
+          deleteButton.innerHTML = '<i class="fa fa-trash-alt text-lg"></i>';
+          deleteButton.style.position = 'absolute';
+          deleteButton.style.top = '0';
+          deleteButton.style.right = '0';
+
+          imageElement.appendChild(deleteButton);
+          imageContainer.appendChild(imageElement);
+
+          deleteButton.addEventListener('click', () => {
+            imageElement.remove();
+          });
+        };
+      }
+    }
+
+    // Display a message if more than 3 images are uploaded
+    if (files.length > maxImages) {
+      const remaining = files.length - maxImages;
+      const message = document.createElement('p');
+      message.textContent = `You have ${remaining} more images.`;
+      imageContainer.appendChild(message);
+    }
+  });
+
+  function validateForm() {
+  const name = document.querySelector('[name="name"]');
+  const description = document.querySelector('[name="description"]');
+  const rating = document.querySelector('[name="rating"]');
+  const rate = document.querySelector('[name="rate"]'); // Add this for rate
+  const category = document.querySelector('[name="category"]');
+  const images = document.querySelector('[name="images"]');
+
+  // Check if any field is empty or contains only whitespace
+  if (!name.value.trim() || !description.value.trim() || !rating.value.trim() || !rate.value.trim() || !category.value.trim() || images.files.length < 1) {
+    Swal.fire({
+      title: 'Warning!',
+      text: 'All fields are necessary, and at least 1 image must be uploaded.',
+      icon: 'error',
+      confirmButton: 'Cool'
+    });
+    return false;
+  } else if (rating.value < 1 || rating.value > 5) {
+    Swal.fire({
+      title: 'Error!',
+      text: 'Rating must be between 1 and 5.',
+      icon: 'error',
+      confirmButton: 'Ok'
+    });
+    return false;
+  } else if (parseFloat(rate.value) < 0) {
+    Swal.fire({
+      title: 'Error!',
+      text: 'Rate cannot be negative.',
+      icon: 'error',
+      confirmButton: 'Ok'
+    });
+    return false;
+  }
+  return true;
+}
+</script>
+
+<%- include('../partials/footer') %>
+
+<!-- Custom Styles -->
+<style>
+    .sidebar .logout {
+  margin-top: auto;  /* This will push the logout button to the bottom */
+  background: #e74c3c; /* Optional: Customize the background color */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.sidebar .logout:hover {
+  background: #c0392b; /* Optional: Darken on hover */
+}
+
+  .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
+  .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+  .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
+  .nav { list-style: none; padding: 0; }
+  .nav li { margin: 10px 0; }
+  .nav a { color: white; text-decoration: none; font-size: 16px; display: flex; align-items: center; padding: 12px; border-radius: 5px; transition: 0.3s; }
+  .nav a i { margin-right: 10px; font-size: 20px; }
+  .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
+  .content { flex-grow: 1; padding: 40px; }
+  .header h2 { color: #2c3e50; margin-bottom: 20px; }
+  .form-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+  .form-container .form-label { font-weight: bold; }
+  .image-container { display: flex; gap: 10px; }
+  .image-element { position: relative; }
+  .image-element img { width: 150px; height: 150px; object-fit: contain; }
+</style>

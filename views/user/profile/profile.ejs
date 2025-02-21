@@ -1,0 +1,218 @@
+<%- include('../../partials/userHeader') %>
+
+<style>
+  /* Ensure the page fills at least 100vh */
+  html, body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Main content will expand and push footer to bottom if necessary */
+  .main-content {
+    flex: 1;
+  }
+
+  footer {
+    margin-top: auto;
+  }
+
+  /* Modern Gradient Background */
+  .gradient-custom {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+  }
+
+  /* Card Styling */
+  .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Profile Image */
+  .profile-img {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .profile-img:hover {
+    transform: scale(1.05);
+  }
+
+  /* Edit Form Styling */
+  .edit-form {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 1.5rem;
+  }
+
+  .edit-form .form-control {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+
+  .edit-form .btn {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .profile-img {
+      width: 100px;
+      height: 100px;
+    }
+
+    .col-lg-3, .col-lg-9 {
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
+</style>
+
+<div class="main-content">
+  <div class="gradient-custom">
+    <div class="container py-4">
+      <!-- Breadcrumb -->
+      <nav class="d-flex">
+        <h5 class="mb-0">
+          <a href="/user/dashboard" class="text-white-50">Home</a>
+          <span class="text-white-50 mx-2"> > </span>
+          <a href="/user/profile" class="text-white">Profile</a>
+        </h5>
+      </nav>
+      <!-- Breadcrumb -->
+    </div>
+  </div>
+
+  <section class="pt-5">
+    <div class="container">
+      <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 px-3">
+          <div class="account-nav rounded shadow bg-white p-4">
+            <div class="text-center mb-4">
+              <h4 class="mb-0">Hi <%= user.name %></h4>
+              <p class="text-muted">Your personal dashboard</p>
+            </div>
+            <div class="text-center my-3">
+              <a class="nav-link" href="/user/viewCart">
+                <i class="fa-solid fa-wallet me-1"></i>Wallet Amount: <%= user.wallet.toFixed(2) %>
+              </a>
+            </div>
+            <hr>
+            <button class="btn btn-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse" aria-expanded="false" aria-controls="navCollapse">
+              Menu
+            </button>
+            <div class="collapse mt-3" id="navCollapse">
+              <ul class="list-unstyled mb-0">
+                <li>
+                  <a href="/user/profile" class="text-decoration-none text-primary d-block py-2">
+                    <button class="btn btn-secondary w-100">Profile</button>
+                  </a>
+                </li>
+                <li>
+                  <a href="/user/address" class="text-decoration-none text-dark d-block py-2">
+                    <button class="btn btn-primary w-100">Address</button>
+                  </a>
+                </li>
+                <li>
+                  <a href="/user/orders" class="text-decoration-none text-dark d-block py-2">
+                    <button class="btn btn-secondary w-100">My Orders</button>
+                  </a>
+                </li>
+                <li>
+                  <a href="/user/viewWishlist" class="text-decoration-none text-dark d-block py-2">
+                    <button class="btn btn-secondary w-100">My Wishlist</button>
+                  </a>
+                </li>
+                <li>
+                  <a href="/user/wallethistory" class="text-decoration-none text-dark d-block py-2">
+                    <button class="btn btn-secondary w-100">Wallet History</button>
+                  </a>
+                </li>
+                <li>
+                  <a href="/user/forgot" class="text-decoration-none text-dark d-block py-2">
+                    <button class="btn btn-secondary w-100">Change Password</button>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9 px-3">
+          <div class="card p-4">
+            <div class="profile-img-container text-center">
+              <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava1-bg.webp" 
+                   alt="Avatar" class="profile-img">
+            </div>
+            <div class="profile-info text-center mt-3">
+              <h5 id="userName"><%= user.name %></h5>
+              <p id="userEmail"><%= user.email %></p>
+              
+              <button class="btn btn-primary mt-2" id="editProfileBtn">Edit Profile</button>
+            </div>
+
+            <!-- Edit Form (Initially Hidden) -->
+            <div class="edit-form mt-4" id="editForm" style="display: none;">
+              <form action="/user/profile/update" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">Name</label>
+                  <input type="text" class="form-control" name="name" value="<%= user.name %>">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-control" name="email" value="<%= user.email %>">
+                </div>
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-success">Save Changes</button>
+                  <button type="button" class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="account-details mt-4">
+              <h6>Account Details</h6>
+              <p><strong>Email:</strong> <%= user.email %></p>
+              <p><strong>Password:</strong> 
+                <% if(user.password) { %> ****** <% } else { %> Google Signed In <% } %>
+              </p>
+              
+              <p><strong>Account Created On:</strong> <%= user.dateCreated.toLocaleString() %></p>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('../../partials/footer') %>
+
+<script>
+  document.getElementById('editProfileBtn').addEventListener('click', function() {
+    document.querySelector('.profile-info').style.display = 'none';
+    document.getElementById('editForm').style.display = 'block';
+  });
+
+  document.getElementById('cancelEditBtn').addEventListener('click', function() {
+    document.querySelector('.profile-info').style.display = 'block';
+    document.getElementById('editForm').style.display = 'none';
+  });
+</script>

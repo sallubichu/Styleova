@@ -1,0 +1,188 @@
+<%- include('../../partials/userHeader') %>
+
+<head>
+    <style>
+        .gradient-custom {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-outline {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-outline input {
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 10px 15px;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-outline input:focus {
+            border-color: #6a11cb;
+            box-shadow: 0 0 5px rgba(106, 17, 203, 0.5);
+        }
+
+        .form-outline label {
+            position: absolute;
+            top: 12px;
+            left: 15px;
+            background: white;
+            padding: 0 5px;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .form-outline input:focus + label,
+        .form-outline input:not(:placeholder-shown) + label {
+            top: -10px;
+            font-size: 12px;
+            color: #6a11cb;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(106, 17, 203, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .col-lg-3, .col-lg-9 {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<div class="gradient-custom">
+    <div class="container py-4">
+        <nav class="d-flex">
+            <h5 class="mb-0">
+                <a href="/user/dashboard" class="text-white-50">Home</a>
+                <span class="text-white-50 mx-2"> > </span>
+                <a href="/user/profile" class="text-white-50">Profile</a>
+                <span class="text-white-50 mx-2"> > </span>
+                <a href="/user/address" class="text-white">Address</a>
+            </h5>
+        </nav>
+    </div>
+</div>
+
+<section class="pt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 px-3">
+                <div class="account-nav rounded shadow bg-white p-4">
+                    <div class="text-center mb-4">
+                        <h4 class="mb-0">Hi <%= user ? user.name : 'User' %></h4>
+                        <p class="text-muted">Your personal dashboard</p>
+                    </div>
+                    <div class="text-center my-3">
+                        <a class="nav-link" href="/user/viewCart">
+                            <i class="fa-solid fa-wallet me-1"></i> Wallet Amount: <%= user ? (user.wallet ? user.wallet.toFixed(2) : '0.00') : '0.00' %>
+                        </a>
+                    </div>
+                    <hr>
+                    <button class="btn btn-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse">
+                        Menu
+                    </button>
+                    <div class="collapse mt-3" id="navCollapse">
+                        <ul class="list-unstyled mb-0">
+                            <li><a href="/user/profile" class="btn btn-secondary w-100 my-1">Profile</a></li>
+                            <li><a href="/user/address" class="btn btn-primary w-100 my-1">Address</a></li>
+                            <li><a href="/user/orders" class="btn btn-secondary w-100 my-1">My Orders</a></li>
+                            <li><a href="/user/viewWishlist" class="btn btn-secondary w-100 my-1">My Wishlist</a></li>
+                            <li><a href="/user/wallethistory" class="btn btn-secondary w-100 my-1">Wallet History</a></li>
+                            <li><a href="/user/forgot" class="btn btn-secondary w-100 my-1">Change Password</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9 px-3">
+                <div class="card p-4">
+                    <h3 class="text-center mb-4">Edit Address</h3>
+                    <form id="formSubmit" action="/user/updateAddress/<%= address._id %>" method="POST">
+                        <input type="hidden" id="formId" name="addressId" value="<%= address._id %>">
+
+                        <% const fields = [
+                            { id: 'formName', label: 'Name', value: address.name },
+                            { id: 'formMobileNumber', label: 'Mobile Number', value: address.mobileNumber },
+                            { id: 'formPincode', label: 'Pincode', value: address.pincode },
+                            { id: 'formLocality', label: 'Locality', value: address.locality },
+                            { id: 'formAddress', label: 'Address', value: address.address },
+                            { id: 'formDistrict', label: 'District', value: address.district },
+                            { id: 'formState', label: 'State', value: address.state },
+                            { id: 'formLandmark', label: 'Landmark', value: address.landmark },
+                            { id: 'formAlternateMobile', label: 'Alternate Mobile Number', value: address.alternateMobile }
+                        ]; %>
+
+                        <% fields.forEach(field => { %>
+                            <div class="form-outline">
+                                <input type="text" id="<%= field.id %>" name="<%= field.id.replace('form', '').toLowerCase() %>" class="form-control" required value="<%= field.value || '' %>"/>
+                                <label for="<%= field.id %>"><%= field.label %></label>
+                            </div>
+                        <% }) %>
+
+                        <button type="submit" class="btn btn-primary btn-block mb-4">Update Address</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.getElementById('formSubmit').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = {};
+        document.querySelectorAll('#formSubmit input').forEach(input => {
+            formData[input.name] = input.value.trim();
+        });
+
+        try {
+            const response = await fetch(`/user/updateAddress/<%= address._id %>`, {
+                method: "PATCH",
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(formData)
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok) {
+                Swal.fire({ title: 'Success!', text: 'Address updated successfully', icon: 'success' }).then(() => {
+                    window.location.href = '/user/address';
+                });
+            } else {
+                Swal.fire({ title: 'Error!', text: responseData.message || 'Failed to update address', icon: 'error' });
+            }
+        } catch (e) {
+            console.error("Error:", e);
+            Swal.fire({ title: 'Error!', text: 'An error occurred', icon: 'error' });
+        }
+    });
+</script>
+
+<%- include('../../partials/footer') %>

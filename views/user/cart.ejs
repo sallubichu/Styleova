@@ -1,0 +1,223 @@
+<%- include('../partials/userHeader') %>
+
+<div class="bg-primary shadow-lg">
+    <div class="container py-3">
+        <nav class="d-flex">
+            <h5 class="mb-0">
+                <a href="/" class="text-white-50" style="text-decoration: none;">Home</a>
+                <span class="text-white mx-2"> > </span>
+                <a href="/user/viewCart" class="text-white" style="text-decoration: none;">Cart</a>
+            </h5>
+        </nav>
+    </div>
+</div>
+
+<div class="container-fluid py-5 gradient-custom">
+    <div class="row">
+        <!-- Cart Items Section -->
+        <div class="col-12 col-md-8">
+            <div class="card mb-4">
+                <div class="card-header py-3">
+                    <h4 class="mb-0">Cart Items - <%= cart && cart.products.length ? cart.products.length : 0 %></h4>
+                </div>
+                <div class="card-body">
+                    <% if (!cart || cart.products.length === 0) { %>
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <h2 class="text-center m-5">Your cart is Empty</h2>
+                            </div>
+                        </div>
+                    <% } else { %>
+                        <% cart.products.forEach(product => { %>
+                            <div class="card mb-3">
+                                <div class="row g-0">
+                                    <!-- Product Image -->
+                                    <div class="col-md-3">
+                                        <img src="/<%= product.productId.images[0] %>" class="img-fluid rounded-start" alt="<%= product.productId.name %>" />
+                                    </div>
+                                    <!-- Product Details -->
+                                    <div class="col-md-6">
+                                        <div class="card-body">
+                                            <h5 class="card-title"><%= product.productId.name %></h5>
+                                            <p class="card-text">Size: <strong><%= product.size %></strong></p>
+                                            <p class="card-text">Info: <%= product.productId.description %></p>
+                                            <p class="card-text">Rating: <%= product.productId.rating %></p>
+                                            <p class="card-text">Availability: <%= product.productId.stock[product.size] !== undefined ? product.productId.stock[product.size] : "Out of Stock" %> in stock</p>
+                                            <p class="card-text">Category: <%= product.productId.category.name %></p>
+                                        </div>
+                                    </div>
+                                    <!-- Quantity and Price -->
+                                    <div class="col-md-3">
+                                        <div class="card-body d-flex flex-column align-items-end">
+                                            <div class="d-flex mb-3">
+                                                <button class="btn btn-outline-secondary btn-sm" onclick="updateQuantity('decrement', '<%= product.productId._id %>', '<%= product.size %>')">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <input 
+                                                    id="quantity-<%= product.productId._id %>" 
+                                                    min="1" 
+                                                    max="5" 
+                                                    name="quantity" 
+                                                    value="<%= product.quantity %>" 
+                                                    type="number" 
+                                                    class="form-control text-center mx-2" 
+                                                    disabled 
+                                                    data-stock="<%= product.productId.stock[product.size] %>" 
+                                                    style="width: 60px;"
+                                                />
+                                                <button class="btn btn-outline-secondary btn-sm" onclick="updateQuantity('increment', '<%= product.productId._id %>', '<%= product.size %>')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                            <p class="card-text"><strong>Price per piece: Rs. <%= product.productId.rate %></strong></p>
+                                            <p class="card-text"><strong>Total Cost: Rs. <%= product.productId.rate * product.quantity %></strong></p>
+                                            <button class="btn btn-danger btn-sm mt-2" onclick="deleteProduct('<%= product.productId._id %>', '<%= product.size %>')">
+                                                <i class="fas fa-trash"></i> Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <% if (cart && cart.products.length > 0) { %>
+            <div class="col-12 col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header py-3">
+                        <h5 class="mb-0">Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 pb-0">
+                                Products <span>Rs. <%= totalAmount %></span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 mb-3">
+                                <strong>Total amount</strong> <span><strong>Rs. <%= totalAmount %></strong></span>
+                            </li>
+                        </ul>
+                        <a href="/user/checkout">
+                            <button id="checkout-btn" type="button" class="btn btn-primary btn-lg btn-block w-100">Go to checkout</button>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+async function updateQuantity(action, productId, size) {
+    const quantityInput = document.getElementById(`quantity-${productId}`);
+    const stock = parseInt(quantityInput.getAttribute("data-stock")); // Get size-specific stock
+    let currentQuantity = parseInt(quantityInput.value);
+
+    if (!size) {
+        Swal.fire({
+            title: "Error!",
+            text: "Size is missing. Please select a size before updating quantity.",
+            icon: "error",
+            confirmButtonText: "OK",
+        });
+        return;
+    }
+
+    // Check stock before incrementing
+    if (action === "increment" && currentQuantity >= stock) {
+        Swal.fire({
+            title: "Error!",
+            text: "Insufficient stock. Cannot increase quantity.",
+            icon: "error",
+            confirmButtonText: "OK",
+        });
+        return;
+    }
+
+    if (action === "increment") {
+        currentQuantity++;
+    } else if (action === "decrement") {
+        currentQuantity--;
+    }
+
+    if (currentQuantity < 1) {
+        Swal.fire({
+            title: "Error!",
+            text: "Minimum quantity is 1.",
+            icon: "error",
+            confirmButtonText: "OK",
+        });
+        return;
+    }
+
+    try {
+        const response = await fetch(`/user/updateQuantity/${productId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ quantity: currentQuantity, size }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            quantityInput.value = currentQuantity;
+            window.location.reload(); // Reload to reflect updated stock
+        } else {
+            Swal.fire({
+                title: "Error!",
+                text: data.message || "Failed to update quantity.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+        }
+    } catch (error) {
+        Swal.fire({
+            title: "Error!",
+            text: "An error occurred while updating quantity.",
+            icon: "error",
+            confirmButtonText: "OK",
+        });
+        console.error(error);
+    }
+}
+
+async function deleteProduct(productId, size) {
+    Swal.fire({
+        title: "Are you sure?",
+        text: "This product will be removed from your cart.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, remove it!",
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/user/deleteProduct/${productId}`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ size })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    Swal.fire("Deleted!", "Product has been removed.", "success").then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire("Error!", data.message || "Failed to remove product.", "error");
+                }
+            } catch (error) {
+                Swal.fire("Error!", "An error occurred while removing the product.", "error");
+                console.error(error);
+            }
+        }
+    });
+}
+</script>
+
+<%- include('../partials/footer') %>

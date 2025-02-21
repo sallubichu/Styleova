@@ -1,0 +1,108 @@
+<%- include('../partials/adminHeader') %>
+
+<main class="vh-100 bg-image">
+  <div class="container py-5 h-100">
+    <div class="row d-flex justify-content-center align-items-center">
+      <div class="col col-xl-10">
+        <div class="card" style="border-radius: 1rem;">
+          <div class="row g-0">
+            <div class="col-md-6 col-lg-5 d-none d-md-block">
+              <img src="/assets/img/AdminPage.jpg" alt="Admin Page Image" class="img-fluid" style="border-radius: 1rem 0 0 1rem;" />
+            </div>
+            <div class="col-md-6 col-lg-7 d-flex align-items-center">
+              <div class="card-body p-4 p-lg-5 text-black">
+
+                <!-- Display success or error messages -->
+                <% if (successMessage) { %>
+                  <script>
+                    Swal.fire({
+                      title: 'Success!',
+                      text: '<%= successMessage %>',
+                      icon: 'success',
+                      confirmButtonText: 'Cool'
+                    });
+                  </script>
+                <% } %>
+                <% if (errorMessage) { %>
+                  <script>
+                    Swal.fire({
+                      title: 'Error!',
+                      text: '<%= errorMessage %>',
+                      icon: 'error',
+                      confirmButtonText: 'Cool'
+                    });
+                  </script>
+                <% } %>
+
+                <form action="/admin/login" method="POST" onsubmit="return validateForm()">
+                  <div class="d-flex align-items-center mb-3 pb-1">
+                    <i class="fas fa-cubes fa-2x me-3" style="color: #1b3cdf;"></i>
+                    <span class="h1 fw-bold mb-0">Hi Admin</span>
+                  </div>
+
+                  <h5 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;">Sign into your account</h5>
+
+                  <div class="form-outline mb-4">
+                    <input type="email" name="email" id="form2Example17" class="form-control form-control-lg" required />
+                    <label class="form-label" for="form2Example17">Email address</label>
+                  </div>
+
+                  <div class="form-outline mb-4">
+                    <input type="password" id="form2Example27" class="form-control form-control-lg" name="password" required />
+                    <label class="form-label" for="form2Example27">Password</label>
+                  </div>
+
+                  <div class="pt-1 mb-4">
+                    <button type="submit" class="btn btn-dark btn-lg w-100 mb-2">Login</button>
+                  </div>
+
+                  <a href="#!" class="small text-muted">Privacy policy</a>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Form validation
+  function validateForm() {
+    const email = document.querySelector('[name="email"]');
+    const password = document.querySelector('[name="password"]');
+
+    // Check if any field is empty or contains only whitespace
+    if (!email.value.trim() || !password.value.trim()) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'All fields are necessary',
+        icon: 'error',
+        confirmButtonText: 'Cool'
+      })
+      return false;
+    } else if (password.value.length < 8 || password.value.length > 10) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'Password must be between 8 and 10 characters',
+        icon: 'error',
+        confirmButtonText: 'Ok'
+      })
+      return false;
+    }
+    return true;
+  }
+</script>
+
+<%- include('../partials/footer') %>
+
+<!-- Add custom styles for the background image -->
+<style>
+  .bg-image {
+    background-image: url('/assets/img/loginPage.jpg'); /* Replace with your image URL */
+    background-size: cover; /* Ensure the background covers the whole area */
+    background-position: center center; /* Center the background image */
+    background-repeat: no-repeat; /* Prevent repeating the image */
+  }
+</style>

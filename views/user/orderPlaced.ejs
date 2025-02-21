@@ -1,0 +1,98 @@
+<!-- User Header Partial -->
+<%- include('../partials/userHeader') %>
+
+<!-- Heading -->
+<div class="bg-primary">
+    <div class="container py-4">
+        <!-- Breadcrumb -->
+        <nav class="d-flex">
+            <h6 class="mb-0">
+                <a href="/" class="text-white-50">Home</a>
+                <span class="text-white-50 mx-2"> > </span>
+                <a href="" class="text-white">Order Confirmation</a>
+            </h6>
+        </nav>
+        <!-- Breadcrumb -->
+    </div>
+</div>
+
+<section class="bg-light py-5">
+    <div class="container justify-content-center d-flex">
+        <div class="col-xl-8 col-lg-8 mb-4">
+            <!-- Confirmation Message -->
+            <div class="card shadow-0 border">
+                <div class="p-4">
+                    <h5 class="card-title mb-3">Order Confirmation</h5>
+                    <% if(paymentStatus == "Failed"){ %>
+                        <div class="alert alert-warning" role="alert">
+                            <h4 class="alert-heading">Order Placed but Payment Failed</h4>
+                            <p>Your order has been placed successfully, but the payment failed. Please complete the payment to get it delivered!</p>
+                            <hr>
+                            <p class="mb-0">You will receive an email confirmation shortly.</p>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-success" role="alert">
+                            <h4 class="alert-heading">Order Placed Successfully!</h4>
+                            <p>Your order has been placed successfully. Thank you for shopping with us!</p>
+                            <hr>
+                            <p class="mb-0">You will receive an email confirmation shortly.</p>
+                        </div>
+                    <% } %>
+
+                    <!-- Display Order Details -->
+                    <div class="mt-4">
+                        <h6>Order Details</h6>
+                        <p><strong>Order ID:</strong> <%= orderId %></p>
+                        <p><strong>Order Date:</strong> <%= orderDate.toLocaleString() %></p>
+                        <!-- Add more order details here if needed -->
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="/user/dashboard" class="btn btn-primary">Continue Shopping</a>
+                        <button class="btn btn-success" onclick="downloadInvoice('<%= orderId %>')">Download Invoice</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Confirmation Message -->
+        </div>
+    </div>
+</section>
+
+<script>
+    async function downloadInvoice(orderId) {
+        if (!orderId) {
+            alert("Order ID is missing");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/user/invoice/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to download invoice');
+            }
+
+            // Handle file download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `invoice-${orderId}.pdf`; // Assuming the server returns a PDF
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading invoice:', error);
+            alert('Failed to download invoice. Please try again later.');
+        }
+    }
+</script>
+
+<!-- Footer Partial -->
+<%- include('../partials/footer') %>

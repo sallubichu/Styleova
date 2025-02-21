@@ -1,0 +1,346 @@
+<%- include('../partials/adminHeader') %>
+
+<style>
+  .admin-container {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 250px;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-right: 1px solid #dee2e6;
+  }
+
+  .sidebar .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .sidebar .nav {
+    list-style: none;
+    padding: 0;
+  }
+
+  .sidebar .nav li {
+    margin-bottom: 10px;
+  }
+
+  .sidebar .nav a {
+    text-decoration: none;
+    color: #333;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+
+  .sidebar .nav a:hover {
+    background-color: #e9ecef;
+  }
+
+  .sidebar .nav a.active {
+    background-color: #007bff;
+    color: #fff;
+  }
+
+  .content {
+    flex: 1;
+    padding: 20px;
+  }
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .user-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .user-table th,
+  .user-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .user-table th {
+    background-color: #f8f9fa;
+  }
+
+  .btn-sm {
+    padding: 5px 10px;
+    font-size: 0.875rem;
+  }
+</style>
+
+<div class="admin-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3 class="logo">Admin Panel</h3>
+    <ul class="nav">
+      <li>
+        <a href="/admin/dashboard"
+          ><i class="bi bi-speedometer2"></i> Dashboard</a
+        >
+      </li>
+      <li>
+        <a href="/admin/category"><i class="bi bi-tags"></i> Categories</a>
+      </li>
+      <li>
+        <a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a>
+      </li>
+      <li>
+        <a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a>
+      </li>
+      <li>
+        <a href="/admin/manageOrders"
+          ><i class="bi bi-cart-check"></i> Orders</a
+        >
+      </li>
+      <li>
+        <a href="/admin/offers"><i class="bi bi-percent"></i> Manage Offers</a>
+      </li>
+      <li>
+        <a href="/admin/coupons"
+          ><i class="bi bi-ticket-perforated"></i> Coupons</a
+        >
+      </li>
+      <li>
+        <a href="/admin/salesManagement" class="active"
+          ><i class="bi bi-bar-chart-line"></i> Sales Management</a
+        >
+      </li>
+    </ul>
+    <li>
+      <a href="/admin/logout" class="logout"
+        ><i class="bi bi-box-arrow-right"></i> Logout</a
+      >
+    </li>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    <div class="header d-flex justify-content-between align-items-center">
+      <h3>Sales Management</h3>
+    </div>
+
+    <!-- Sales Report Form -->
+    <div class="row border p-4 mb-4">
+      <h4 class="text-center">Generate Sales Report</h4>
+      <div class="col-12">
+        <form id="salesReportForm" action="/admin/salesReport" method="POST">
+          <div class="mb-3">
+            <label for="filterType" class="form-label"
+              >Select Filter Type:</label
+            >
+            <select class="form-select" id="filterType" name="filterType">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div id="customDateInputs" class="mb-3" style="display: none">
+            <div class="mb-3">
+              <label for="startDate" class="form-label">Start Date:</label>
+              <input
+                type="date"
+                class="form-control"
+                id="startDate"
+                name="startDate"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="endDate" class="form-label">End Date:</label>
+              <input
+                type="date"
+                class="form-control"
+                id="endDate"
+                name="endDate"
+              />
+            </div>
+          </div>
+          <div class="d-flex flex-column flex-md-row justify-content-between">
+            <button
+              type="submit"
+              class="btn btn-primary mb-2 mb-md-0"
+              name="reportType"
+              value="view"
+            >
+              View Report
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sales Data Table -->
+    <div class="row border p-4 mb-4">
+      <h4 class="text-center">Sales Data</h4>
+      <div class="col-12">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Total Sales</th>
+              <th>Total Amount</th>
+              <th>Total Discount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% salesData.forEach(sale => { %>
+            <tr>
+              <td><%= sale.period %></td>
+              <td><%= sale.totalSales %></td>
+              <td><%= sale.totalAmount.toFixed(2) %></td>
+              <td><%= sale.totalDiscount.toFixed(2) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <!-- PDF and Excel Report Buttons -->
+      <div class="col-12 mt-4">
+        <form id="pdfExcelReportForm" action="/admin/salesReport" method="POST">
+          <input type="hidden" id="pdfExcelFilterType" name="filterType" />
+          <input type="hidden" id="pdfExcelStartDate" name="startDate" />
+          <input type="hidden" id="pdfExcelEndDate" name="endDate" />
+          <input type="hidden" id="pdfExcelReportType" name="reportType" />
+          <!-- Add this line -->
+          <div class="d-flex flex-column flex-md-row justify-content-between">
+            <button
+              type="submit"
+              class="btn btn-danger mb-2 mb-md-0"
+              onclick="setReportType('pdf')"
+              <!--
+              Add
+              this
+              onclick
+              event
+              --
+            >
+              > PDF Report
+            </button>
+            <button
+              type="submit"
+              class="btn btn-success"
+              onclick="setReportType('excel')"
+              <!--
+              Add
+              this
+              onclick
+              event
+              --
+            >
+              > Excel Report
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function setReportType(type) {
+    document.getElementById("pdfExcelReportType").value = type;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const filterTypeSelect = document.getElementById("filterType");
+    const customDateInputs = document.getElementById("customDateInputs");
+    const startDateInput = document.getElementById("startDate");
+    const endDateInput = document.getElementById("endDate");
+
+    // Show/hide custom date inputs based on filter type
+    filterTypeSelect.addEventListener("change", function () {
+      if (this.value === "custom") {
+        customDateInputs.style.display = "block";
+      } else {
+        customDateInputs.style.display = "none";
+      }
+    });
+
+    // Handle the sales report form submission with AJAX (for view report)
+    const salesReportForm = document.getElementById("salesReportForm");
+
+    salesReportForm.addEventListener("submit", async function (event) {
+      event.preventDefault(); // Prevent default form submission
+
+      const filterType = filterTypeSelect.value;
+      const startDate = startDateInput.value;
+      const endDate = endDateInput.value;
+      const reportType = "view"; // Add this line
+
+      // Prepare the request body for the data
+      const requestBody = { filterType, reportType }; // Include reportType
+
+      // If the filter type is custom, add start and end dates
+      if (filterType === "custom") {
+        requestBody.startDate = startDate;
+        requestBody.endDate = endDate;
+      }
+
+      try {
+        const response = await fetch("/admin/salesReport", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch sales data");
+        }
+
+        const data = await response.json();
+        updateSalesTable(data.salesData);
+      } catch (error) {
+        console.error("Error fetching sales data:", error);
+      }
+    });
+
+    // Function to update the sales data table
+    function updateSalesTable(salesData) {
+      const tableBody = document.querySelector("table.user-table tbody");
+      tableBody.innerHTML = ""; // Clear existing rows
+
+      salesData.forEach((sale) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+        <td>${sale.period}</td>
+        <td>${sale.totalSales}</td>
+        <td>${sale.totalAmount.toFixed(2)}</td>
+        <td>${sale.totalDiscount.toFixed(2)}</td>
+      `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Handle the PDF and Excel report generation form submission (for download)
+    const pdfExcelReportForm = document.getElementById("pdfExcelReportForm");
+    const pdfExcelFilterType = document.getElementById("pdfExcelFilterType");
+    const pdfExcelStartDate = document.getElementById("pdfExcelStartDate");
+    const pdfExcelEndDate = document.getElementById("pdfExcelEndDate");
+
+    pdfExcelReportForm.addEventListener("submit", function () {
+      // Set the hidden inputs for filter type and dates
+      pdfExcelFilterType.value = filterTypeSelect.value;
+      pdfExcelStartDate.value = startDateInput.value;
+      pdfExcelEndDate.value = endDateInput.value;
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

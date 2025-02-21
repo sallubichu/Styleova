@@ -1,0 +1,224 @@
+<%- include('../partials/adminHeader') %>
+
+<div class="admin-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3 class="logo">Admin Panel</h3>
+    <ul class="nav">
+      <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="/admin/category"><i class="bi bi-tags"></i> Categories</a></li>
+      <li><a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a></li>
+      <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
+      <li><a href="/admin/manageOrders" class="active"><i class="bi bi-cart-check"></i> Orders</a></li>
+    </ul>
+    <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    <div class="header d-flex justify-content-between align-items-center">
+      <h3>Manage Orders</h3>
+      <nav aria-label="Page navigation">
+        <ul class="pagination">
+          <% for (let i = 1; i <= totalPages; i++) { %>
+            <li class="page-item <%= i === page ? 'active' : '' %>">
+              <a class="page-link" href="/admin/manageOrdersPagination/<%= i %>"><%= i %></a>
+            </li>
+          <% } %>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="table-container">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Recipient Name</th>
+            <th>Ordered Date</th>
+            <th>Status</th>
+            <th>Payment Method</th>
+            <th>Payment Status</th>
+            <th>Total Amount</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% data.forEach(order => { %>
+            <tr>
+              <td><%= order.name %></td>
+              <td><%= new Date(order.orderedDate).toLocaleString() %></td>
+              <td>
+                <% if (order.status === "Pending") { %>
+                  <span class="text-warning">Pending</span>
+                <% } else if (order.status === "Shipped") { %>
+                  <span class="text-info">Shipped</span>
+                <% } else if (order.status === "Delivered") { %>
+                  <span class="text-success">Delivered</span>
+                <% } %>
+              </td>
+              <td><%= order.paymentMethod %></td>
+              <td><%= order.paymentStatus %></td>
+              <td><%= order.totalAmount %></td>
+              <td>
+                <% if (order.status === 'Pending') { %>
+                  <button class="btn btn-primary btn-sm update-status" data-id="<%= order._id %>" data-status="Shipped">Mark as Shipped</button>
+                  <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
+                <% } else if (order.status === 'Shipped') { %>
+                  <button class="btn btn-success btn-sm update-status" data-id="<%= order._id %>" data-status="Delivered">Mark as Delivered</button>
+                  <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.update-status').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-id');
+        const newStatus = e.target.getAttribute('data-status');
+        
+        try {
+          const response = await fetch(`/admin/toggleOrderStatus/${orderId}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status: newStatus }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Order Status Updated',
+              text: `Order status has been updated to ${newStatus}.`,
+              confirmButtonText: 'OK'
+            }).then(() => {
+              window.location.reload();
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Update Failed',
+              text: data.message || 'Failed to update order status. Please try again.',
+              confirmButtonText: 'OK'
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred. Please try again later.',
+            confirmButtonText: 'OK'
+          });
+        }
+      });
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.cancel-order').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      const orderId = e.target.getAttribute('data-id');
+
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "You are about to cancel this order!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, cancel it!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const response = await fetch(`/admin/cancelOrder/${orderId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "Cancelled" })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Order Cancelled',
+                text: 'The order has been successfully cancelled.',
+                confirmButtonText: 'OK'
+              }).then(() => {
+                window.location.reload();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Cancellation Failed',
+                text: data.message || 'Failed to cancel the order. Please try again.',
+                confirmButtonText: 'OK'
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'An error occurred. Please try again later.',
+              confirmButtonText: 'OK'
+            });
+          }
+        }
+      });
+    });
+  });
+});
+
+</script>
+
+<%- include('../partials/footer') %>
+
+<!-- Custom Styles -->
+<style>
+  .sidebar .logout {
+  margin-top: auto;  /* This will push the logout button to the bottom */
+  background: #e74c3c; /* Optional: Customize the background color */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.sidebar .logout:hover {
+  background: #c0392b; /* Optional: Darken on hover */
+}
+
+  .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
+  .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+  .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
+  .nav { list-style: none; padding: 0; }
+  .nav li { margin: 10px 0; }
+  .nav a { color: white; text-decoration: none; font-size: 16px; display: flex; align-items: center; padding: 12px; border-radius: 5px; transition: 0.3s; }
+  .nav a i { margin-right: 10px; font-size: 20px; }
+  .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
+  .content { flex-grow: 1; padding: 40px; }
+  .header { display: flex; justify-content: space-between; align-items: center; }
+  .header h3 { color: #2c3e50; }
+  .pagination { margin: 0; }
+  .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); }
+  .user-table { width: 100%; border-collapse: collapse; }
+  .user-table th, .user-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+  .user-table th { background: #2c3e50; color: white; }
+  .status { font-weight: bold; }
+</style>

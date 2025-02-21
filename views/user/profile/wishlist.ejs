@@ -1,0 +1,204 @@
+<%- include('../../partials/userHeader') %>
+
+<!-- Sidebar Toggle Button -->
+<button
+  class="btn btn-primary m-3"
+  type="button"
+  data-bs-toggle="offcanvas"
+  data-bs-target="#sidebar"
+>
+  ☰ Menu
+</button>
+
+<!-- Collapsing Sidebar -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Menu</h5>
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="offcanvas"
+    ></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul class="list-group">
+      <li class="list-group-item">
+        <a href="/" class="text-decoration-none">Home</a>
+      </li>
+      <li class="list-group-item">
+        <a href="/user/wishlist" class="text-decoration-none">Wishlist</a>
+      </li>
+      <li class="list-group-item">
+        <a href="/user/cart" class="text-decoration-none">Cart</a>
+      </li>
+      <li class="list-group-item">
+        <a href="/user/profile" class="text-decoration-none">Profile</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="container-fluid py-5 gradient-custom">
+  <div class="row">
+    <!-- Wishlist Items Section -->
+    <div class="col-12 col-md-9 offset-md-1">
+      <div class="card mb-4 shadow">
+        <div class="card-header py-3 bg-primary text-white">
+          <h4 class="mb-0">
+            Wishlist Items - <%= wishlist && wishlist.products ?
+            wishlist.products.length : 0 %>
+          </h4>
+        </div>
+        <div class="card-body">
+          <% if (!wishlist || !wishlist.products || wishlist.products.length ===
+          0) { %>
+          <div class="row justify-content-center">
+            <div class="col-md-8">
+              <h2 class="text-center m-5">Your wishlist is Empty</h2>
+            </div>
+          </div>
+          <% } else { %>
+          <div class="row row-cols-1 row-cols-md-3 g-4">
+            <% wishlist.products.forEach(function(product) { %>
+            <div class="col">
+              <div class="card h-100 shadow-sm">
+                <a href="/user/productDetailed/<%= product._id %>">
+                  <img
+                    src="/<%= product.images[0] %>"
+                    class="card-img-top img-fluid"
+                    alt="<%= product.name %>"
+                    style="height: 200px; object-fit: cover"
+                  />
+                </a>
+                <div class="card-body">
+                  <h5 class="card-title"><%= product.name %></h5>
+                  <p class="card-text text-muted">
+                    <%= product.description.slice(0, 50) %>...
+                  </p>
+                  <p class="card-text">
+                    <strong>Price: Rs. <%= product.rate %></strong>
+                  </p>
+                  <div class="mb-3">
+                    <h6 class="mb-2">Availability by Size:</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                      <% Object.keys(product.stock).forEach(function(size) { %>
+                      <div class="size-stock">
+                        <span class="d-block"><%= size %></span>
+                        <span
+                          class="badge <%= product.stock[size] > 0 ? 'bg-success' : 'bg-danger' %>"
+                        >
+                          <%= product.stock[size] > 0 ? `In Stock
+                          (${product.stock[size]})` : 'Out of Stock' %>
+                        </span>
+                      </div>
+                      <% }) %>
+                    </div>
+                  </div>
+                  <button
+                    class="btn btn-danger btn-sm w-100"
+                    onclick="removeFromWishlist('<%= product._id %>')"
+                  >
+                    <i class="fas fa-trash"></i> Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            <% }) %>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SweetAlert Script -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  async function removeFromWishlist(productId) {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This product will be removed from your wishlist.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, remove it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(
+            `/user/removeFromWishlist/${productId}`,
+            {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+            }
+          );
+
+          const data = await response.json();
+
+          if (response.ok) {
+            Swal.fire("Deleted!", "Product has been removed.", "success").then(
+              () => {
+                window.location.reload();
+              }
+            );
+          } else {
+            Swal.fire(
+              "Error!",
+              data.message || "Failed to remove product.",
+              "error"
+            );
+          }
+        } catch (error) {
+          Swal.fire(
+            "Error!",
+            "An error occurred while removing the product.",
+            "error"
+          );
+          console.error(error);
+        }
+      }
+    });
+  }
+</script>
+
+<%- include('../../partials/footer') %>
+<style>
+  /* Custom Gradient Background */
+  .gradient-custom {
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  }
+
+  /* Card Hover Effect */
+  .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Sidebar Styling */
+  .offcanvas {
+    background-color: #f8f9fa;
+  }
+
+  .list-group-item {
+    border: none;
+    padding: 10px 15px;
+  }
+
+  .list-group-item a {
+    color: #333;
+    text-decoration: none;
+  }
+
+  .list-group-item:hover {
+    background-color: #e9ecef;
+  }
+</style>

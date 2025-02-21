@@ -1,0 +1,230 @@
+<%- include('../partials/adminHeader') %>
+
+<div class="admin-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3 class="logo">Admin Panel</h3>
+    <ul class="nav">
+      <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="/admin/category"><i class="bi bi-tags"></i> Categories</a></li>
+      <li><a href="/admin/products" class="active"><i class="bi bi-box-seam"></i> Products</a></li>
+      <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
+      <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
+    </ul>
+    <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    <div class="header">
+      <h2>Edit Product</h2>
+    </div>
+
+    <!-- Edit Product Form -->
+    <div class="form-container">
+      <form class="row g-3" id="updateForm" onsubmit="validateForm(event)">
+        <input type="hidden" value="<%= data._id %>" name="id" id="formId">
+
+        <div class="mb-3">
+          <label for="formName" class="form-label">Product Name</label>
+          <input type="text" name="name" class="form-control" id="formName" value="<%= data.name %>" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="formDescription" class="form-label">Description</label>
+          <textarea class="form-control" id="formDescription" rows="3" name="description" required><%= data.description %></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="formRating" class="form-label">Rating</label>
+          <input type="number" name="rating" class="form-control" id="formRating" value="<%= data.rating %>" min="1" max="5" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="formRate" class="form-label">Rate</label>
+          <input type="text" name="rate" class="form-control" id="formRate" value="<%= data.rate %>" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="formCategory" class="form-label">Category</label>
+          <select class="form-select" id="formCategory" name="category">
+            <% categories.forEach(category => { %>
+              <option value="<%= category._id %>" <%= String(category._id) === String(data.category._id) ? 'selected' : '' %>>
+                <%= category.name %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <!-- Display Existing Images with Delete Option -->
+        <div class="mb-3">
+          <label class="form-label">Product Images</label>
+          <div id="imagePreview">
+            <% data.images.forEach((image, index) => { %>
+              <div class="image-container" id="imageContainer-<%= index %>">
+                <img src="/<%= image %>" alt="Product Image" class="preview-img small-img">
+                <button type="button" class="btn btn-danger delete-btn btn-sm" onclick="removeImage(<%= index %>)">Delete</button>
+              </div>
+            <% }); %>
+          </div>
+          <input type="file" name="images" class="form-control" id="formImages" multiple>
+        </div>
+
+        <div class="mb-3">
+          <button type="submit" class="btn btn-primary w-100">Update Product</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script>
+let deletedImages = [];
+
+function removeImage(index) {
+  const imageElement = document.getElementById(`imageContainer-${index}`);
+  if (imageElement) {
+    const imageSrc = imageElement.querySelector("img").getAttribute("src"); 
+    const imageName = imageSrc.split("/").slice(-2).join("/"); // Get correct path
+    deletedImages.push(imageName); // Store the image path
+    imageElement.remove(); // Remove from UI
+  }
+}
+
+
+function validateForm(event) {
+  event.preventDefault();
+
+  const id = document.getElementById("formId").value;
+  const name = document.getElementById("formName").value.trim();
+  const description = document.getElementById("formDescription").value.trim();
+  const rating = document.getElementById("formRating").value.trim();
+  const category = document.getElementById("formCategory").value;
+  const imageInput = document.getElementById("formImages");
+  const rate = document.getElementById("formRate").value;
+
+  if (!name || !description || !category) {
+    Swal.fire({ icon: "error", title: "Validation Error", text: "All fields are required!" });
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("id", id);
+  formData.append("name", name);
+  formData.append("description", description);
+  formData.append("rating", rating);
+  formData.append("category", category);
+  formData.append("deleteImages", JSON.stringify(deletedImages));
+  formData.append("rate", rate);
+
+  // Append new image files
+  if (imageInput.files.length > 0) {
+    for (let i = 0; i < imageInput.files.length; i++) {
+      formData.append("images", imageInput.files[i]);
+    }
+  }
+
+  fetch("/admin/editProduct", {
+    method: "PATCH",
+    body: formData, // Use FormData instead of JSON
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.message === "Product updated successfully") {
+      Swal.fire({ icon: "success", title: "Success", text: data.message })
+        .then(() => { window.location.href = "/admin/products"; });
+    } else {
+      Swal.fire({ icon: "error", title: "Error", text: data.message || "Failed to update product." });
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    Swal.fire({ icon: "error", title: "Error", text: "An error occurred while updating the product." });
+  });
+}
+
+
+
+</script>
+
+<%- include('../partials/footer') %>
+
+
+
+
+<!-- Custom Styles -->
+<style>
+    .sidebar .logout {
+  margin-top: auto;  /* This will push the logout button to the bottom */
+  background: #e74c3c; /* Optional: Customize the background color */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+#imagePreview {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 15px; /* Space between images */
+  overflow-x: auto; /* Allows scrolling if images exceed the container width */
+  padding: 10px 0;
+}
+
+.image-container {
+  display: flex;
+  flex-direction: column; /* Stack image and button */
+  align-items: center; /* Center items */
+  gap: 5px; /* Space between image and button */
+}
+
+.preview-img {
+  width: 100px; /* Adjust as needed */
+  height: 100px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.delete-btn {
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: 0.3s;
+}
+
+.delete-btn:hover {
+  background: darkred;
+}
+
+
+.sidebar .logout:hover {
+  background: #c0392b; /* Optional: Darken on hover */
+}
+.small-img {
+    width: 100px;
+    height: auto;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
+  .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+  .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
+  .nav { list-style: none; padding: 0; }
+  .nav li { margin: 10px 0; }
+  .nav a { color: white; text-decoration: none; font-size: 16px; display: flex; align-items: center; padding: 12px; border-radius: 5px; transition: 0.3s; }
+  .nav a i { margin-right: 10px; font-size: 20px; }
+  .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
+  .content { flex-grow: 1; padding: 40px; }
+  .header h2 { color: #2c3e50; margin-bottom: 20px; }
+  .form-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+  .form-container .form-label { font-weight: bold; }
+</style>

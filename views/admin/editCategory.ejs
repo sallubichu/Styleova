@@ -1,0 +1,139 @@
+<%- include('../partials/adminHeader') %>
+
+<div class="admin-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3 class="logo">Admin Panel</h3>
+    <ul class="nav">
+      <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="/admin/category" class="active"><i class="bi bi-tags"></i> Categories</a></li>
+      <li><a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a></li>
+      <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
+      <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
+      
+    </ul>
+    <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    <div class="header">
+      <h2>Edit Category</h2>
+    </div>
+
+    <!-- Edit Category Form -->
+    <div class="form-container">
+      <form class="row g-3" onsubmit="validateForm(event)">
+        <!-- Hidden ID Field -->
+        <input type="hidden" value="<%= _id %>" name="id" id="catId">
+
+        <div class="mb-3">
+          <label for="inputName" class="form-label">Category Name</label>
+          <input type="text" name="name" class="form-control" id="inputName" value="<%= name %>" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="inputDescription" class="form-label">Description</label>
+          <textarea class="form-control" id="inputDescription" rows="3" name="description" required><%= description %></textarea>
+        </div>
+
+       
+
+        <button type="submit" class="btn btn-primary w-100">Edit Category</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script>
+    // Validate and Handle Form Submission
+    function validateForm(event) {
+        event.preventDefault(); // Prevent the form from default submission
+
+        // Get values from the form fields
+        const id = document.getElementById("catId").value;
+        const name = document.getElementById("inputName").value.trim();
+        const description = document.getElementById("inputDescription").value.trim();
+        
+
+        // Simple validation
+        if (!name || !description ) {
+            Swal.fire({
+                icon: "error",
+                title: "Validation Error",
+                text: "All fields are required!",
+            });
+            return;
+        }
+
+        // Send data to the server
+        fetch("/admin/editCategory", {
+            method: "PATCH", // Use PATCH for updates
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id, name, description }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.message === "Category updated successfully") {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Success",
+                        text: data.message,
+                    }).then(() => {
+                        window.location.href = "/admin/category"; // Redirect on success
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: data.message || "Failed to update category.",
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "An error occurred while updating the category.",
+                });
+            });
+    }
+</script>
+
+<%- include('../partials/footer') %>
+
+<!-- Custom Styles -->
+<style>
+    .sidebar .logout {
+  margin-top: auto;  /* This will push the logout button to the bottom */
+  background: #e74c3c; /* Optional: Customize the background color */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+}
+
+.sidebar .logout:hover {
+  background: #c0392b; /* Optional: Darken on hover */
+}
+
+  .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
+  .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+  .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
+  .nav { list-style: none; padding: 0; }
+  .nav li { margin: 10px 0; }
+  .nav a { color: white; text-decoration: none; font-size: 16px; display: flex; align-items: center; padding: 12px; border-radius: 5px; transition: 0.3s; }
+  .nav a i { margin-right: 10px; font-size: 20px; }
+  .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
+  .content { flex-grow: 1; padding: 40px; }
+  .header h2 { color: #2c3e50; margin-bottom: 20px; }
+  .form-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+  .form-container .form-label { font-weight: bold; }
+</style>
