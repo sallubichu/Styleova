@@ -345,7 +345,7 @@ exports.editUser = async (req, res) => {
 exports.orders = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1; 
-    const limit = 1; // 
+    const limit = 5; // 
     const skip = (page - 1) * limit; // 
 
     const totalOrders = await Order.countDocuments({ userId: req.user._id }); 
@@ -417,10 +417,15 @@ exports.cancelSingle = async (req, res) => {
     const userId = req.user._id;
     const orderId = req.params.oid;
     const productId = req.query.pid;
+    const size = req.query.size; // Add size to the request query
 
-    // Validate orderId and productId
-    if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ success: false, message: "Invalid order or product ID." });
+    // Validate orderId, productId, and size
+    if (
+      !mongoose.Types.ObjectId.isValid(orderId) ||
+      !mongoose.Types.ObjectId.isValid(productId) ||
+      !size
+    ) {
+      return res.status(400).json({ success: false, message: "Invalid order, product ID, or size." });
     }
 
     // Find the order
@@ -429,14 +434,14 @@ exports.cancelSingle = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found or unauthorized." });
     }
 
-    console.log(order);
-
-    // Find the ordered item
+    // Find the ordered item based on productId AND size
     const orderedItem = order.orderedItems.find(
-      (item) => item.productId.toString() === productId
+      (item) =>
+        item.productId.toString() === productId &&
+        item.size === size // Check the size
     );
     if (!orderedItem) {
-      return res.status(404).json({ success: false, message: "Product not found in the order." });
+      return res.status(404).json({ success: false, message: "Product with the specified size not found in the order." });
     }
 
     // Check if the item is already canceled
@@ -474,10 +479,9 @@ exports.cancelSingle = async (req, res) => {
       );
     }
 
-    // Restore product stock
+    // Restore product stock for the specific size
     const product = await Product.findById(productId);
     if (product) {
-      const size = orderedItem.size;
       if (product.stock && product.stock[size] !== undefined) {
         product.stock[size] += orderedItem.quantity;
         await product.save();
@@ -623,18 +627,31 @@ exports.cancelOrder = async (req, res) => {
 
 exports.getWalletHistory = async (req, res) => {
   try {
-    const userId = req.user._id; // Assuming you have user information in req.user
-    
+    const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1; // Get page number from query params
+    const limit = 10; // Number of items per page
+    const skip = (page - 1) * limit;
 
+    // Fetch wallet history
     const walletHistory = await WalletHistory.findOne({ userId }).populate('userId');
 
     if (!walletHistory) {
-      return res.status(404).render('wallet', { history: [] });
+      return res.status(404).render('wallet', { history: [], user: req.user, page, totalPages: 0 });
     }
 
-    res.render('user/profile/wallet', { history: walletHistory.history,user:req.user });
+    // Sort history by newest first (descending order)
+    const sortedHistory = walletHistory.history.sort((a, b) => b.dateCreated - a.dateCreated);
+
+    const totalRecords = sortedHistory.length;
+    const totalPages = Math.ceil(totalRecords / limit);
+
+    // Paginate history
+    const paginatedHistory = sortedHistory.slice(skip, skip + limit);
+
+    res.render('user/profile/wallet', { history: paginatedHistory, user: req.user, page, totalPages });
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
 };
+

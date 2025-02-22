@@ -503,7 +503,7 @@ exports.toggleOrderStatus = async (req, res) => {
   }
 };
 exports.manageOrdersPagination = async (req, res) => {
-  const limit = 5; // Limit of orders per page
+  const limit = 10; // Limit of orders per page
   let { pageNumber = 1 } = req.params;
   pageNumber = parseInt(pageNumber);
   if (isNaN(pageNumber) || pageNumber < 1) {
@@ -581,16 +581,17 @@ exports.logout = (req, res) => {
   res.redirect("/admin/login");
 };
 
-exports.cancelOrder = async (req, res) => { 
+exports.cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
 
+    // Validate orderId
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       return res.status(400).json({ message: "Invalid order ID format" });
     }
 
+    // Find the order and populate product details
     const order = await orderModel.findById(orderId).populate("orderedItems.productId");
-    
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -600,14 +601,15 @@ exports.cancelOrder = async (req, res) => {
       return res.status(400).json({ message: "Cannot cancel a delivered order" });
     }
 
-    // If order was paid, process refund
-    if (order.paymentStatus === "Paid" || order.paymentStatus === "Completed") {
-      let refundAmount = 0;
-      
-      // Refund calculation and stock restoration
-      for (const orderedItem of order.orderedItems) {
-        refundAmount += orderedItem.price * orderedItem.quantity;
+    let refundAmount = 0; // 🔥 Fix: Declared outside if block
 
+    // If the order was paid, process refund
+    if (order.paymentStatus === "Paid" || order.paymentStatus === "Completed") {
+      // Calculate refund amount and restore product stock
+      for (const orderedItem of order.orderedItems) {
+        refundAmount += (orderedItem.price - orderedItem.offerDiscount) * orderedItem.quantity;
+
+        // Restore product stock for the specific size
         const product = await Product.findById(orderedItem.productId);
         if (product && product.stock[orderedItem.size] !== undefined) {
           product.stock[orderedItem.size] += orderedItem.quantity;
@@ -617,26 +619,43 @@ exports.cancelOrder = async (req, res) => {
 
       // Credit refund to user wallet
       if (refundAmount > 0) {
-        await User.findByIdAndUpdate(order.userId, { $inc: { wallet: refundAmount } });
+        const user = await User.findById(order.userId);
+        if (user) {
+          user.wallet += refundAmount; // Increase wallet balance
+          await user.save();
 
-        const history = new walletHistoryModel({
-          userId: order.userId,
-          transactionType: "Credit",
-          amount: refundAmount,
-          order: order._id,
-        });
-        await history.save();
+          // 🛠️ **Fix: Update Wallet History Correctly**
+          await walletHistoryModel.findOneAndUpdate(
+            { userId: order.userId }, // Find wallet history for the user
+            {
+              $push: {
+                history: {
+                  amount: refundAmount,
+                  type: "credit",
+                  walletBalance: user.wallet, // Store updated balance
+                  dateCreated: new Date(),
+                },
+              },
+            },
+            { upsert: true, new: true } // Create new if not exists, return updated
+          );
+        } else {
+          console.error("User not found for order:", order._id);
+        }
       }
 
+      // Update payment status to "Refunded"
       order.paymentStatus = "Refunded";
     }
 
+    // Update order status to "Cancelled"
     order.status = "Cancelled";
     await order.save();
 
     return res.status(200).json({
       success: true,
-      message: "Order cancelled, stock updated, refund processed.",
+      message: "Order cancelled, stock updated, refund processed, and wallet history updated.",
+      refundAmount: refundAmount, // ✅ Now correctly defined
     });
 
   } catch (error) {
@@ -644,6 +663,8 @@ exports.cancelOrder = async (req, res) => {
     return res.status(500).json({ message: "Error while cancelling order." });
   }
 };
+
+
 
 
   

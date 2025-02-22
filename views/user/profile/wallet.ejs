@@ -1,14 +1,12 @@
 <%- include('../../partials/userHeader') %>
 
 <style>
-  /* Ensure the page fills at least 100vh */
   html, body {
     height: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  /* Main content will expand and push footer to bottom if necessary */
   .main-content {
     flex: 1;
   }
@@ -17,12 +15,10 @@
     margin-top: auto;
   }
 
-  /* Modern Gradient Background */
   .gradient-custom {
     background: linear-gradient(135deg, #6a11cb, #2575fc);
   }
 
-  /* Card Styling */
   .card {
     border: none;
     border-radius: 12px;
@@ -35,7 +31,23 @@
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   }
 
-  /* Responsive Design */
+  .pagination .page-item .page-link {
+    color: white;
+    background-color: #6a11cb;
+    border: 1px solid #6a11cb;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #ff4081;
+    border-color: #ff4081;
+  }
+
+  .pagination .page-item .page-link:hover {
+    background-color: #ffcc00;
+    border-color: #ffcc00;
+    color: black;
+  }
+
   @media (max-width: 768px) {
     .col-lg-3, .col-lg-9 {
       padding-left: 0;
@@ -47,7 +59,6 @@
 <div class="main-content">
   <div class="gradient-custom">
     <div class="container py-4">
-      <!-- Breadcrumb -->
       <nav class="d-flex">
         <h5 class="mb-0">
           <a href="/user/dashboard" class="text-white-50">Home</a>
@@ -57,14 +68,12 @@
           <a href="/user/wallethistory" class="text-white">Wallet History</a>
         </h5>
       </nav>
-      <!-- Breadcrumb -->
     </div>
   </div>
 
   <section class="pt-5">
     <div class="container">
       <div class="row">
-        <!-- Sidebar -->
         <div class="col-lg-3 px-3">
           <div class="account-nav rounded shadow bg-white p-4">
             <div class="text-center mb-4">
@@ -77,47 +86,22 @@
               </a>
             </div>
             <hr>
-            <button class="btn btn-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse" aria-expanded="false" aria-controls="navCollapse">
+            <button class="btn btn-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse" aria-expanded="false">
               Menu
             </button>
             <div class="collapse mt-3" id="navCollapse">
               <ul class="list-unstyled mb-0">
-                <li>
-                  <a href="/user/profile" class="text-decoration-none text-primary d-block py-2">
-                    <button class="btn btn-secondary w-100">Profile</button>
-                  </a>
-                </li>
-                <li>
-                  <a href="/user/address" class="text-decoration-none text-dark d-block py-2">
-                    <button class="btn btn-primary w-100">Address</button>
-                  </a>
-                </li>
-                <li>
-                  <a href="/user/orders" class="text-decoration-none text-dark d-block py-2">
-                    <button class="btn btn-secondary w-100">My Orders</button>
-                  </a>
-                </li>
-                <li>
-                  <a href="/user/viewWishlist" class="text-decoration-none text-dark d-block py-2">
-                    <button class="btn btn-secondary w-100">My Wishlist</button>
-                  </a>
-                </li>
-                <li>
-                  <a href="/user/wallethistory" class="text-decoration-none text-dark d-block py-2">
-                    <button class="btn btn-secondary w-100">Wallet History</button>
-                  </a>
-                </li>
-                <li>
-                  <a href="/user/forgot" class="text-decoration-none text-dark d-block py-2">
-                    <button class="btn btn-secondary w-100">Change Password</button>
-                  </a>
-                </li>
+                <li><a href="/user/profile" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">Profile</button></a></li>
+                <li><a href="/user/address" class="text-decoration-none d-block py-2"><button class="btn btn-primary w-100">Address</button></a></li>
+                <li><a href="/user/orders" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">My Orders</button></a></li>
+                <li><a href="/user/viewWishlist" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
+                <li><a href="/user/wallethistory" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">Wallet History</button></a></li>
+                <li><a href="/user/forgot" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">Change Password</button></a></li>
               </ul>
             </div>
           </div>
         </div>
 
-        <!-- Main Content -->
         <div class="col-lg-9 px-3">
           <div class="card p-4">
             <h4 class="mb-4">Wallet History</h4>
@@ -149,6 +133,16 @@
                 </tbody>
               </table>
             </div>
+            
+            <nav aria-label="Wallet Pagination">
+              <ul class="pagination justify-content-center">
+                <% for (let i = 1; i <= totalPages; i++) { %>
+                  <li class="page-item <%= page === i ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                  </li>
+                <% } %>
+              </ul>
+            </nav>
           </div>
         </div>
       </div>

@@ -243,14 +243,25 @@
                                                     <p class="text-success">Offer: -₹<%= pdt.offerDiscount %></p>
                                                 <% } %>
                                                 <p>Qty: <%= pdt.quantity %></p>
+                                                <p>Size: <%= pdt.size %></p> <!-- Display size -->
                                                 <p>Status: <%= order.status %></p>
 
                                                 <% if(order.status === "Pending" || order.status === "Shipped") { %>
-                                                    <button class="btn btn-danger cancel-btn" data-order-id="<%= order._id %>" data-product-id="<%= pdt.productId._id %>">Cancel</button>
+                                                    <button class="btn btn-danger cancel-btn" 
+                                                            data-order-id="<%= order._id %>" 
+                                                            data-product-id="<%= pdt.productId._id %>"
+                                                            data-size="<%= pdt.size %>"
+                                                            aria-label="Cancel this item">
+                                                        Cancel
+                                                    </button>
                                                 <% } else if(order.status === "Delivered" && !pdt.returned) { %>
-                                                   
-
-<button class="btn btn-danger returnButton" data-orderId="<%= order._id %>" data-productId="<%= pdt.productId._id %>">Return</button>
+                                                    <button class="btn btn-danger returnButton" 
+                                                            data-order-id="<%= order._id %>" 
+                                                            data-product-id="<%= pdt.productId._id %>"
+                                                            data-size="<%= pdt.size %>"
+                                                            aria-label="Return this item">
+                                                        Return
+                                                    </button>
                                                 <% } %>
                                             </div>
                                         </div>
@@ -266,98 +277,95 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-    const returnButtons = document.querySelectorAll('.returnButton');
+            // Cancel Button Logic
+            const cancelButtons = document.querySelectorAll('.cancel-btn');
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const orderId = this.getAttribute('data-order-id');
+                    const productId = this.getAttribute('data-product-id');
+                    const size = this.getAttribute('data-size');
 
-    returnButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const orderId = this.getAttribute('data-orderId'); // Ensure this matches the EJS attribute
-            const productId = this.getAttribute('data-productId'); // Ensure this matches the EJS attribute
-
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'Do you want to return this order?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, return it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch(`/user/returnOrder/${orderId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ productId: productId }), // Pass productId in the request body
-                        credentials: "include",
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire('Success!', 'Order has been returned and refunded.', 'success').then(() => {
-                                location.reload(); // Reload the page to reflect changes
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: 'Do you want to cancel this item?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, cancel it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch(`/user/cancelOrder/${orderId}?pid=${productId}&size=${size}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: "include",
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Cancelled!', 'Your item has been canceled.', 'success')
+                                    .then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error!', data.message, 'error');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire('Error!', 'Something went wrong.', 'error');
                             });
-                        } else {
-                            Swal.fire('Error!', data.message, 'error');
                         }
-                    })
-                    .catch(error => {
-                        Swal.fire('Error!', 'Something went wrong.', 'error');
                     });
-                }
+                });
+            });
+
+            // Return Button Logic
+            const returnButtons = document.querySelectorAll('.returnButton');
+            returnButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const orderId = this.getAttribute('data-order-id');
+                    const productId = this.getAttribute('data-product-id');
+                    const size = this.getAttribute('data-size');
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: 'Do you want to return this item?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, return it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch(`/user/returnOrder/${orderId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ productId: productId, size: size }),
+                                credentials: "include",
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Success!', 'Order has been returned and refunded.', 'success').then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error!', data.message, 'error');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire('Error!', 'Something went wrong.', 'error');
+                            });
+                        }
+                    });
+                });
             });
         });
-    });
-});
-
-
-    
-document.addEventListener('DOMContentLoaded', function () {
-  const cancelButtons = document.querySelectorAll('.cancel-btn');
-
-  cancelButtons.forEach(button => {
-    button.addEventListener('click', function () {
-      const orderId = this.getAttribute('data-order-id');
-      const productId = this.getAttribute('data-product-id');
-
-      Swal.fire({
-        title: 'Are you sure?',
-        text: 'Do you want to cancel this item?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, cancel it!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch(`/user/cancelOrder/${orderId}?pid=${productId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: "include",
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              Swal.fire('Cancelled!', 'Your item has been canceled.', 'success')
-              .then(() => {
-                location.reload();
-              });
-            } else {
-              Swal.fire('Error!', data.message, 'error');
-            }
-          })
-          .catch(error => {
-            Swal.fire('Error!', 'Something went wrong.', 'error');
-          });
-        }
-      });
-    });
-  });
-});
     </script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
