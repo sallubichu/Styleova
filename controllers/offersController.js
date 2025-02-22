@@ -3,11 +3,32 @@ const Offers = require("../models/offerModel");
 // Render offers page
 exports.renderOffers = async (req, res) => {
   try {
-    const offers = await Offers.find();
+    const page = parseInt(req.query.page) || 1; // Default to page 1
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 offers per page
+    const skip = (page - 1) * limit;
+
+    // Fetch paginated offers
+    const offers = await Offers.find()
+      .skip(skip)
+      .limit(limit);
+
+    // Get the total number of offers
+    const totalOffers = await Offers.countDocuments();
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalOffers / limit);
+
     res.render("admin/manageOffers", {
       offers,
+      pagination: {
+        totalOffers,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
     });
   } catch (error) {
+    console.error("Error fetching offers:", error);
     res.redirect("/admin/getOffers");
   }
 };
@@ -24,6 +45,14 @@ exports.addOffer = async (req, res) => {
       endDate,
       status,
     } = req.body;
+
+  const existingOffer = await Offers.findOne({ name });
+  if (existingOffer) {
+    return res.status(400).json({
+      success: false,
+      message: "An offer with this name already exists.",
+    });
+  }
 
     // Validate start and end dates
     if (new Date(startDate) >= new Date(endDate)) {
@@ -97,6 +126,14 @@ exports.updateOffer = async (req, res) => {
       endDate,
       status,
     } = req.body;
+
+      const existingOffer = await Offers.findOne({ name });
+  if (existingOffer) {
+    return res.status(400).json({
+      success: false,
+      message: "An offer with this name already exists.",
+    });
+  }
 
     // Validate start and end dates
     if (new Date(startDate) >= new Date(endDate)) {

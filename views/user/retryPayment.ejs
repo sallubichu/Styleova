@@ -8,9 +8,9 @@
       <h5 class="mb-0">
         <a href="/" class="text-white-50" style="text-decoration: none">Home</a>
         <span class="text-white-50 mx-2"> > </span>
-        <a href="/user/viewCart" class="text-white-50" style="text-decoration: none">Cart</a>
+        <a href="/user/orders" class="text-white-50" style="text-decoration: none">My Orders</a>
         <span class="text-white mx-2"> > </span>
-        <a href="/user/checkout" class="text-white" style="text-decoration: none">Checkout</a>
+        <a href="/user/retryPayment" class="text-white" style="text-decoration: none">Retry Payment</a>
       </h5>
     </nav>
     <!-- Breadcrumb -->
@@ -21,12 +21,12 @@
   <div class="container">
     <div class="row">
       <div class="col-xl-8 col-lg-8 mb-4">
-        <!-- Checkout -->
+        <!-- Retry Payment -->
         <div class="card shadow-0 border">
           <div class="p-4">
             <form action="/user/placeOrder" method="POST">
               <h5 class="card-title mb-3">Shipping Address</h5>
-              <input type="hidden" name="cartId" value="<%= cart._id %>" />
+              <input type="hidden" name="orderId" value="<%= orderId %>" />
               <div class="row">
                 <div class="col-12 mb-3">
                   <p class="mt-4 mb-0">Select address</p>
@@ -113,15 +113,15 @@
               </div>
 
               <div class="float-end">
-                <a href="/">
+                <a href="/user/orders">
                   <button class="btn btn-secondary shadow-0 border">Cancel</button>
                 </a>
-                <button class="btn btn-success shadow-0 border" type="submit">Place Order</button>
+                <button class="btn btn-success shadow-0 border" type="submit">Retry Payment</button>
               </div>
             </form>
           </div>
         </div>
-        <!-- Checkout -->
+        <!-- Retry Payment -->
       </div>
 
       <div class="col-xl-4 col-lg-4 d-flex justify-content-center justify-content-lg-end">
@@ -143,7 +143,7 @@
 
           <h6 class="text-dark my-4">Items in cart</h6>
 
-          <% cart.products.forEach((product, index) => { %>
+          <% cart.forEach((product, index) => { %>
             <div class="d-flex align-items-center mb-4">
               <div class="me-3 position-relative">
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill badge-secondary">
@@ -156,36 +156,10 @@
                   <%= product.productId.name %> 
                 </a><br />
                 <p>Quantity: <%= product.quantity %></p>
-                
-                <!-- Display Discounted Price -->
-                <% if (cart.discountAmount > 0 && cart.couponApplied) { %>
-                  <% 
-                    const itemTotal = product.productId.rate * product.quantity;
-                    const discountPerItem = (itemTotal / totalAmount) * cart.discountAmount;
-                    const discountedPrice = itemTotal - discountPerItem;
-                  %>
-                  <div class="price text-muted">
-                    <del>Rs. <%= itemTotal.toFixed(2) %></del>
-                    <strong class="text-success"> Rs. <%= discountedPrice.toFixed(2) %></strong>
-                  </div>
-                <% } else { %>
-                  <div class="price text-muted">Total: Rs. <%= (product.productId.rate * product.quantity).toFixed(2) %></div>
-                <% } %>
+                <div class="price text-muted">Total: Rs. <%= (product.price * product.quantity).toFixed(2) %></div>
               </div>
             </div>
           <% }) %>
-
-          <!-- Show Coupon Discount -->
-          <% if (cart.discountAmount > 0 && cart.couponApplied) { %>
-            <div class="alert alert-success mt-3">
-              Coupon Applied: <strong>Rs. <%= cart.discountAmount.toFixed(2) %> OFF</strong> 🎉
-            </div>
-          <% } %>
-
-          <!-- Show Final Amount -->
-          <div class="text-end mt-3">
-            <h5>Total Payable: <strong>Rs. <%= cart.finalAmount.toFixed(2) %></strong></h5>
-          </div>
         </div>
       </div>
     </div>
@@ -270,118 +244,6 @@
             text: 'Something went wrong. Please try again.',
           });
         }
-      }
-    });
-  });
-
-  document.addEventListener('DOMContentLoaded', function () {
-    const applyCouponBtn = document.getElementById('applyCouponBtn');
-    const removeCouponBtn = document.getElementById('removeCouponBtn');
-    const couponCodeInput = document.getElementById('couponCode');
-    const couponMessage = document.getElementById('couponMessage');
-    const totalAmountElement = document.getElementById('totalAmount');
-    const discountAmountElement = document.getElementById('discountAmount');
-    const finalAmountElement = document.getElementById('finalAmount');
-
-    let originalTotalAmount = parseFloat(totalAmountElement.innerText);
-    let discountAmount = 0;
-
-    // Apply Coupon
-    applyCouponBtn.addEventListener('click', async (event) => {
-      event.preventDefault(); // Prevent form submission
-
-      const couponCode = couponCodeInput.value.trim();
-      const cartId = document.querySelector('input[name="cartId"]').value;
-
-      if (!couponCode) {
-        couponMessage.innerText = "Please enter a coupon code.";
-        couponMessage.style.color = "red";
-        return;
-      }
-
-      try {
-        const response = await fetch('/user/applyCoupon', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ couponCode, cartId }),
-          credentials: 'include',
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Update UI with discount and final amount
-          discountAmount = data.discountAmount;
-          discountAmountElement.innerText = discountAmount.toFixed(2);
-          finalAmountElement.innerText = (originalTotalAmount - discountAmount).toFixed(2);
-
-          // Update the total amount to reflect the discounted amount
-          totalAmountElement.innerText = (originalTotalAmount - discountAmount).toFixed(2);
-
-          // Show remove coupon button
-          removeCouponBtn.style.display = 'inline-block';
-          applyCouponBtn.style.display = 'none';
-
-          couponMessage.innerText = data.message;
-          couponMessage.style.color = "green";
-
-          // Reload the page to reflect the changes in the UI
-          window.location.reload();
-        } else {
-          couponMessage.innerText = data.message;
-          couponMessage.style.color = "red";
-        }
-      } catch (error) {
-        console.error('Error applying coupon:', error);
-        couponMessage.innerText = 'An error occurred while applying the coupon.';
-        couponMessage.style.color = "red";
-      }
-    });
-
-    // Remove Coupon
-    removeCouponBtn.addEventListener('click', async (event) => {
-      event.preventDefault(); // Prevent form submission
-
-      try {
-        const response = await fetch('/user/removeCoupon', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ cartTotal: originalTotalAmount }),
-          credentials: 'include',
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Reset UI to original values
-          discountAmount = 0;
-          discountAmountElement.innerText = discountAmount.toFixed(2);
-          finalAmountElement.innerText = originalTotalAmount.toFixed(2);
-
-          // Reset the total amount to the original amount
-          totalAmountElement.innerText = originalTotalAmount.toFixed(2);
-
-          // Show apply coupon button
-          removeCouponBtn.style.display = 'none';
-          applyCouponBtn.style.display = 'inline-block';
-
-          couponMessage.innerText = data.message;
-          couponMessage.style.color = "green";
-
-          // Reload the page to reflect the changes in the UI
-          window.location.reload();
-        } else {
-          couponMessage.innerText = data.message;
-          couponMessage.style.color = "red";
-        }
-      } catch (error) {
-        console.error('Error removing coupon:', error);
-        couponMessage.innerText = 'An error occurred while removing the coupon.';
-        couponMessage.style.color = "red";
       }
     });
   });

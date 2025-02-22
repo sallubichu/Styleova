@@ -10,6 +10,7 @@ const couponModel = require("../models/couponModel");
 const passport = require("passport");
 const wishlistController = require("../controllers/wishlistController");
 const paymentController = require("../controllers/paymentController");
+const couponController=require('../controllers/couponController')
 
 router.get("/user/signup", Controller.renderSignup);
 router.post("/user/sendOtp", Controller.registerUser);
@@ -104,5 +105,9 @@ router.post('/user/returnOrder/:orderId', verifyUser,Controller.returnOrder);
 
 // Wallet History Route
 router.get('/user/wallethistory',verifyUser, profileController.getWalletHistory);
+
+router.get("/user/retryPayment",verifyUser,Controller.retryPayment)
+
+
 
 module.exports = router;

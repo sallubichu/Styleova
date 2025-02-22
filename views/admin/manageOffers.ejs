@@ -29,6 +29,16 @@
           ><i class="bi bi-percent"></i> Manage Offers</a
         >
       </li>
+      <li>
+        <a href="/admin/salesManagement" class="active"
+          ><i class="bi bi-bar-chart-line"></i> Sales Management</a
+        >
+      </li>
+      <li>
+        <a href="/admin/getCoupons" class="active"
+          ><i class="bi bi-ticket-perforated"></i> Coupons</a
+        >
+      </li>
     </ul>
     <li>
       <a href="/admin/logout" class="logout"
@@ -99,6 +109,24 @@
           <% }) %>
         </tbody>
       </table>
+        <!-- Pagination Controls -->
+  <div class="pagination mt-4">
+    <% if (pagination.currentPage > 1) { %>
+    <a href="/admin/getOffers?page=<%= pagination.currentPage - 1 %>&limit=<%= pagination.limit %>" class="btn btn-outline-primary">Previous</a>
+    <% } %>
+
+    <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+    <a href="/admin/getOffers?page=<%= i %>&limit=<%= pagination.limit %>"
+      class="btn <%= pagination.currentPage === i ? 'btn-primary' : 'btn-outline-primary' %>">
+      <%= i %>
+    </a>
+    <% } %>
+
+    <% if (pagination.currentPage < pagination.totalPages) { %>
+    <a href="/admin/getOffers?page=<%= pagination.currentPage + 1 %>&limit=<%= pagination.limit %>" class="btn btn-outline-primary">Next</a>
+    <% } %>
+  </div>
+</div>
     </div>
   </main>
 </div>
@@ -604,4 +632,43 @@
   .btn-sm {
     padding: 5px 10px;
   }
+
+  .pagination {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 20px;
+}
+
+.pagination .btn {
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+.pagination .btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.pagination .btn-outline-primary {
+  border: 1px solid #007bff;
+  color: #007bff;
+}
+.sidebar .logout {
+        margin-top: auto; /* This will push the logout button to the bottom */
+        background: #e74c3c; /* Optional: Customize the background color */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.3s;
+      }
+
+      .sidebar .logout:hover {
+        background: #c0392b; /* Optional: Darken on hover */
+      }
 </style>

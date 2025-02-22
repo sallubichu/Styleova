@@ -353,46 +353,31 @@
 
         document.querySelectorAll('#retryPayment').forEach(button => {
             button.addEventListener('click', async () => {
-                const id = button.getAttribute('data-orderId');
-                const razorpayAmount = button.getAttribute('data-amount');
-                try {
-                    const options = {
-                        key: "RAZORPAY_KEY_ID",
-                        amount: razorpayAmount * 100,
-                        currency: "INR",
-                        name: "Styleova",
-                        description: "Purchased from Styleova",
-                        image: "/assets/img/icon.jpg",
-                        handler: async function () {
-                            try {
-                                const response = await axios.get(`/user/retryPayment/${id}`)
-                                if (response.data.mission == "successfull") {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Payment Successful',
-                                        text: 'Continue browsing your orders.',
-                                        confirmButtonText: 'OK'
-                                    }).then(() => window.location.reload())
-                                }
-                            } catch (error) {
-                                console.log(error);
-                            }
-                        },
-                        theme: {
-                            color: "#3399cc"
-                        }
-                    };
-
-                    const rzp = new Razorpay(options);
-                    rzp.open();
-
-                } catch (e) {
-                    console.log(e);
-                    res.status(500).send(e);
+                const orderId = this.getAttribute("data-orderId");
+            const amount = this.getAttribute("data-amount");
+            fetch("/user/retryPayment?orderId=" + orderId + "&amount=" + amount, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include"  // To include cookies/session if required
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.paymentUrl;  // Redirect to payment gateway
+                } else {
+                    alert("Payment retry failed. Please try again.");
                 }
-            });
+            })
+            .catch(error => console.error("Error:", error));
+        });
         });
     });
+
+   
+  
+
 </script>
 
 <style>

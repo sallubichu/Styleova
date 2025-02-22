@@ -9,15 +9,17 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "/auth/google/callback",
-      session: false, // No session-based auth
+      session: false,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email = profile.emails[0].value.toLowerCase(); // Normalize email
+        console.log("Google profile:", profile); // Debugging
+        const email = profile.emails[0].value.toLowerCase();
 
         let user = await UserDb.findOne({ email });
 
         if (!user) {
+          console.log("Creating new user with Google profile"); // Debugging
           user = await new UserDb({
             name: profile.displayName,
             email: email,
@@ -25,14 +27,15 @@ passport.use(
           }).save();
         }
 
+        console.log("User found/created:", user); // Debugging
         return done(null, user);
       } catch (err) {
+        console.error("Error in GoogleStrategy:", err); // Debugging
         return done(err);
       }
     }
   )
 );
-
 // Google OAuth login route
 exports.googleAuth = passport.authenticate("google", {
   scope: ["profile", "email"],
@@ -45,6 +48,7 @@ exports.googleRedirect = [
   (req, res) => {
     try {
       if (!req.user) {
+        console.error("Google authentication failed: No user found");
         return res.status(401).json({ message: "Google authentication failed." });
       }
 
@@ -56,19 +60,18 @@ exports.googleRedirect = [
       );
 
       // Set secure cookie for JWT
-      res.cookie("userJwtAuth", token, {
+      res.cookie("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
       });
 
-      // Redirect to home
-      res.redirect("/");
+      console.log("JWT token set for user:", req.user.email); // Debugging
+      res.redirect("/user/dashboard");
     } catch (error) {
       console.error("Error during Google OAuth:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   },
 ];
-

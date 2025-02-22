@@ -191,8 +191,8 @@ function generatePDFReport(
     .font("Helvetica")
     .fillColor("#333")
     .text(`Total Sales: ${overallSales}`, boxX + 10, doc.y)
-    .text(`Total Amount: ₹${overallAmount.toFixed(2)}`, boxX + 10, doc.y)
-    .text(`Total Discount: ₹${overallDiscount.toFixed(2)}`, boxX + 10, doc.y)
+    .text(`Total Amount: $ ${overallAmount.toFixed(2)}`, boxX + 10, doc.y)
+    .text(`Total Discount: $ ${overallDiscount.toFixed(2)}`, boxX + 10, doc.y)
     .moveDown(2);
 
   // =================== SALES DATA TABLE ===================
@@ -234,8 +234,8 @@ function generatePDFReport(
     const row = [
       sale.period,
       sale.totalSales.toString(),
-      `₹${sale.totalAmount.toFixed(2)}`,
-      `₹${sale.totalDiscount.toFixed(2)}`,
+      `$ ${sale.totalAmount.toFixed(2)}`,
+      `$ ${sale.totalDiscount.toFixed(2)}`,
     ];
     row.forEach((cell, i) => {
       doc

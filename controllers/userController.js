@@ -228,52 +228,50 @@ exports.userLogin = async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.redirect("/user/login?msg=invalid password or username");
+      return res.redirect("/user/login?msg=invalidcredentials");
     }
 
-    const category = await Category.find({});
-
-    if (user.status == "blocked") {
+    // Check if the user is blocked
+    if (user.status === "blocked") {
       return res.redirect("/user/login?msg=block");
     }
-    console.log("Plaintext Password:", password);
-    console.log("Hashed Password:", user.password);
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.redirect("/user/login?msg=invalid password or username");
+      return res.redirect("/user/login?msg=invalidcredentials");
     }
 
     // Generate JWT
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1h",
+      expiresIn: "1h", // Token expires in 1 hour
     });
-    console.log(process.env.JWT_SECRET_KEY);
 
     // Generate Refresh Token
     const refreshToken = jwt.sign(
       { userId: user._id },
       process.env.REFRESH_SECRET_KEY,
       {
-        expiresIn: "7d",
+        expiresIn: "7d", // Refresh token expires in 7 days
       }
     );
 
-    // Set tokens in cookies
+    // Set tokens in HTTP-only cookies
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // Ensure cookies are only sent over HTTPS in production
       sameSite: "strict",
+      maxAge: 3600000, // 1 hour
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      maxAge: 604800000, // 7 days
     });
 
-    const categories = await Category.find();
+    // Redirect to the dashboard
     return res.redirect("/user/dashboard");
   } catch (error) {
     console.error("Login error:", error);
@@ -334,11 +332,9 @@ exports.forgot = async (req, res) => {
 
 exports.placeOrder = async (req, res) => {
   console.log("Received Request Body:", req.body);
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    let user = req.user;
+    const user = req.user;
     if (!user) {
       return res.redirect("/?msg=nouser");
     }
@@ -348,7 +344,7 @@ exports.placeOrder = async (req, res) => {
       cartId,
       paymentMethod,
       paymentStatus,
-      shippingAddress, // Ensure this is correctly passed from the form
+      shippingAddress,
     } = req.body;
 
     const authCouponId = couponId && couponId !== "null" ? couponId : null;
@@ -362,7 +358,9 @@ exports.placeOrder = async (req, res) => {
           "name images originalPrice rate discount stock"
         ),
       addressModel.findById(shippingAddress),
-      authCouponId ? couponModel.findById(authCouponId) : Promise.resolve(null),
+      authCouponId
+        ? couponModel.findById(authCouponId)
+        : Promise.resolve(null),
     ]);
 
     if (!usercart || usercart.products.length === 0) {
@@ -395,7 +393,7 @@ exports.placeOrder = async (req, res) => {
       const discount = Math.round(
         (totalAmount * coupon.discountPercentage) / 100
       );
-      totalAmount -= discount;
+      totalAmount -= discount; // Update totalAmount with the discounted amount
     }
 
     // Check stock availability for each item
@@ -424,16 +422,18 @@ exports.placeOrder = async (req, res) => {
 
     // Handle wallet payment
     if (paymentMethod === "Styleova Wallet") {
-      const userWallet = await User.findById(user._id).select("wallet").session(session);
+      const userWallet = await User.findById(user._id).select("wallet");
+
+      // Use the discounted totalAmount for wallet payment
       if (userWallet.wallet < totalAmount) {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
-      // Deduct from wallet
+      // Deduct from wallet using the discounted totalAmount
       const updatedUser = await User.findByIdAndUpdate(
         user._id,
         { $inc: { wallet: -totalAmount } },
-        { new: true, session }
+        { new: true }
       );
 
       // Add wallet history entry
@@ -450,9 +450,10 @@ exports.placeOrder = async (req, res) => {
             },
           },
         },
-        { new: true, upsert: true, session }
+        { new: true, upsert: true }
       );
-       paymentStatus = "Completed";  
+
+      paymentStatus = "Completed";
     }
 
     // Create and save the order
@@ -460,7 +461,7 @@ exports.placeOrder = async (req, res) => {
       userId: user._id,
       name: address.name,
       orderedItems,
-      totalAmount,
+      totalAmount, // Use the discounted totalAmount
       shippingAddress: address._id,
       paymentMethod,
       paymentStatus,
@@ -468,37 +469,31 @@ exports.placeOrder = async (req, res) => {
       orderedDate: new Date(),
     });
 
-    await order.save({ session });
-    await cartModel.findByIdAndDelete(cartId, { session });
+    await order.save();
+
+    // Delete the cart after placing the order
+    await cartModel.findByIdAndDelete(cartId);
 
     // Update stock quantity
     for (let item of orderedItems) {
       await Product.findByIdAndUpdate(
         item.productId,
-        { $inc: { [`stock.${item.size}`]: -item.quantity } },
-        { session }
+        { $inc: { [`stock.${item.size}`]: -item.quantity } }
       );
     }
-
-    // Commit transaction before rendering response
-    await session.commitTransaction();
-    session.endSession();
 
     return res.render("user/orderPlaced", {
       user: true,
       paymentStatus,
-      orderId: order._id, // Pass orderId to the EJS template
-      orderDate: order.orderedDate, // Pass order date
+      orderId: order._id,
+      orderDate: order.orderedDate,
       orderStatus: order.status,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error placing order:", error);
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 };
-
 exports.forgotPassword = async (req, res) => {
   console.log("forgot triggered");
   const { email } = req.body;
@@ -735,4 +730,44 @@ console.log('order is here',order)
         console.error(error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
+};
+
+exports.retryPayment=async (req, res) => {
+  console.log('retry payment triggering')
+  try {
+    const { orderId } = req.query;
+
+    if (!orderId) {
+      return res.redirect("/user/orders"); // Redirect if no orderId is provided
+    }
+
+    // Fetch the failed order from the database
+    const order = await Order.findById(orderId).populate("orderedItems.productId");
+
+    if (!order) {
+      return res.redirect("/user/orders"); // Redirect if the order is not found
+    }
+
+    // Repopulate the cart with the order items
+    const cartItems = order.orderedItems.map((item) => ({
+      productId: item.productId._id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    // Calculate the total amount
+    const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    // Render the retry payment page
+    res.render("user/retryPayment", {
+      cart: cartItems,
+      totalAmount,
+      orderId,
+      user: req.user, // Pass the user details
+      address: req.user.address, // Pass the user addresses
+    });
+  } catch (error) {
+    console.error("Error in retryPayment route:", error);
+    res.redirect("/user/orders");
+  }
 };

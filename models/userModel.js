@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema({
     default: Date.now, // Automatically set the creation date
   },
   defaultAddress: { type: mongoose.Schema.Types.ObjectId, ref: "address" },
+
+  usedCoupons: [{ type: mongoose.Schema.Types.ObjectId, ref: "Coupon" }],
 });
 
 const User = mongoose.model("User", userSchema);

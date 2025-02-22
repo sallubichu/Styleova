@@ -3,6 +3,6 @@ const router = express.Router();
 const Controller = require("../controllers/controller");
 const verifyUser = require("../middlewares/authMiddleware.js");
 
-router.get("/",Controller.index);
+router.get("/",verifyUser,Controller.index);
 
 module.exports = router;

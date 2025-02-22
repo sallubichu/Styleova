@@ -100,7 +100,7 @@ router.delete(
 router.put("/admin/updateOffer/:id", adminJwtAuth, offerController.updateOffer);
 router.get("/admin/getOffer/:id", adminJwtAuth, offerController.getOffer);
 
-router.get("/admin/getCoupons", adminJwtAuth, couponController.getCoupons);
+router.get("/admin/getCoupons", adminJwtAuth, couponController.getAllCoupons);
 router.post("/admin/addCoupon", adminJwtAuth, couponController.addCoupon);
 router.delete(
   "/admin/deleteCoupon/:id",
