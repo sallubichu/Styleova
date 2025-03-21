@@ -10,17 +10,17 @@ const offerSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["Product", "Category", "Referral"], // Only allow these types
+      enum: ["Product", "Category", "Referral"],
     },
     discountType: {
       type: String,
       required: true,
-      enum: ["Percentage", "Fixed"], // Only allow these discount types
+      enum: ["Percentage", "Fixed"],
     },
     discountValue: {
       type: Number,
       required: true,
-      min: 0, // Ensure discount value is non-negative
+      min: 0,
     },
     startDate: {
       type: Date,
@@ -33,12 +33,22 @@ const offerSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["Active", "Inactive"], // Only allow these statuses
+      enum: ["Active", "Inactive"],
       default: "Active",
+    },
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      default: null, // Optional field, only set for Category offers
+    },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      default: null, // Optional field, only set for Product offers
     },
   },
   {
-    timestamps: true, // Automatically add `createdAt` and `updatedAt` fields
+    timestamps: true,
   }
 );
 

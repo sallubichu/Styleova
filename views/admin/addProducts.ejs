@@ -10,7 +10,6 @@
       <li><a href="/admin/products" class="active"><i class="bi bi-box-seam"></i> Products</a></li>
       <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
       <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
-      
     </ul>
     <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
   </aside>
@@ -23,7 +22,7 @@
 
     <!-- Product Form -->
     <div class="form-container">
-      <form action="/admin/addProducts" method="POST" enctype="multipart/form-data" onsubmit="return validateForm()">
+      <form id="addProductForm" enctype="multipart/form-data" method="POST">
         <div class="mb-3">
           <label for="name" class="form-label">Product Name</label>
           <input type="text" class="form-control" id="name" name="name" required>
@@ -33,24 +32,25 @@
           <label for="description" class="form-label">Description</label>
           <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
         </div>
-    
- <!-- For rating -->
-<div class="mb-3">
-    <label for="rating" class="form-label">Rating</label>
-    <input type="number" class="form-control" id="rating" name="rating" min="1" max="5" required>
-  </div>
-  
-  <!-- For rate -->
-  <div class="mb-3">
-    <label for="rate" class="form-label">Rate</label>
-    <input type="number" class="form-control" id="rate" name="rate" min="0" step="0.01" required>
-  </div>
+
+        <!-- For rating -->
+        <div class="mb-3">
+          <label for="rating" class="form-label">Rating</label>
+          <input type="number" class="form-control" id="rating" name="rating" min="1" max="5" required>
+        </div>
+
+        <!-- For rate -->
+        <div class="mb-3">
+          <label for="rate" class="form-label">Rate</label>
+          <input type="number" class="form-control" id="rate" name="rate" min="0" step="0.01" required>
+        </div>
 
         <div class="mb-3">
           <label for="category" class="form-label">Category</label>
           <select class="form-select" id="category" name="category" required>
+            <option value="" disabled selected>Select a category</option>
             <% data.forEach(category => { %>
-              <option value="<%= category.id %>"><%= category.name %></option>
+              <option value="<%= category._id %>"><%= category.name %></option>
             <% }) %>
           </select>
         </div>
@@ -66,13 +66,32 @@
           </div>
         </div>
 
+        <!-- Stock Size Inputs -->
+        <div class="mb-3">
+          <label class="form-label">Stock by Size</label>
+          <div class="row">
+            <div class="col">
+              <label for="stockSmall" class="form-label">Small</label>
+              <input type="number" class="form-control" id="stockSmall" name="stockSmall" min="0" value="0" required>
+            </div>
+            <div class="col">
+              <label for="stockMedium" class="form-label">Medium</label>
+              <input type="number" class="form-control" id="stockMedium" name="stockMedium" min="0" value="0" required>
+            </div>
+            <div class="col">
+              <label for="stockLarge" class="form-label">Large</label>
+              <input type="number" class="form-control" id="stockLarge" name="stockLarge" min="0" value="0" required>
+            </div>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-primary">Add Product</button>
       </form>
     </div>
   </main>
 </div>
 
-<!-- Modal for stock update -->
+<!-- Modal for stock update (unchanged) -->
 <div class="modal fade" id="stockUpdateModal" tabindex="-1" aria-labelledby="stockUpdateModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -94,10 +113,16 @@
   </div>
 </div>
 
+<!-- Include SweetAlert2 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
 <script>
   const imageContainer = document.querySelector('.image-container');
   const imageInput = document.querySelector('#images');
+  const form = document.querySelector('#addProductForm');
 
+  // Image preview logic (unchanged)
   imageInput.addEventListener('change', (event) => {
     const files = event.target.files;
     imageContainer.innerHTML = ''; // Clear previous images
@@ -144,7 +169,6 @@
       }
     }
 
-    // Display a message if more than 3 images are uploaded
     if (files.length > maxImages) {
       const remaining = files.length - maxImages;
       const message = document.createElement('p');
@@ -153,65 +177,138 @@
     }
   });
 
+  // Client-side form validation
   function validateForm() {
-  const name = document.querySelector('[name="name"]');
-  const description = document.querySelector('[name="description"]');
-  const rating = document.querySelector('[name="rating"]');
-  const rate = document.querySelector('[name="rate"]'); // Add this for rate
-  const category = document.querySelector('[name="category"]');
-  const images = document.querySelector('[name="images"]');
+    const name = document.querySelector('[name="name"]').value.trim();
+    const description = document.querySelector('[name="description"]').value.trim();
+    const rating = document.querySelector('[name="rating"]').value.trim();
+    const rate = document.querySelector('[name="rate"]').value.trim();
+    const category = document.querySelector('[name="category"]').value.trim();
+    const images = document.querySelector('[name="images"]').files;
+    const stockSmall = document.querySelector('[name="stockSmall"]').value.trim();
+    const stockMedium = document.querySelector('[name="stockMedium"]').value.trim();
+    const stockLarge = document.querySelector('[name="stockLarge"]').value.trim();
 
-  // Check if any field is empty or contains only whitespace
-  if (!name.value.trim() || !description.value.trim() || !rating.value.trim() || !rate.value.trim() || !category.value.trim() || images.files.length < 1) {
-    Swal.fire({
-      title: 'Warning!',
-      text: 'All fields are necessary, and at least 1 image must be uploaded.',
-      icon: 'error',
-      confirmButton: 'Cool'
-    });
-    return false;
-  } else if (rating.value < 1 || rating.value > 5) {
-    Swal.fire({
-      title: 'Error!',
-      text: 'Rating must be between 1 and 5.',
-      icon: 'error',
-      confirmButton: 'Ok'
-    });
-    return false;
-  } else if (parseFloat(rate.value) < 0) {
-    Swal.fire({
-      title: 'Error!',
-      text: 'Rate cannot be negative.',
-      icon: 'error',
-      confirmButton: 'Ok'
-    });
-    return false;
+    if (!name || !description || !rating || !rate || !category || images.length < 1 || !stockSmall || !stockMedium || !stockLarge) {
+      Swal.fire({
+        title: 'Warning!',
+        text: 'All fields are required, and at least 1 image must be uploaded.',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    } else if (parseFloat(rating) < 1 || parseFloat(rating) > 5) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'Rating must be between 1 and 5.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    } else if (parseFloat(rate) < 0) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'Rate cannot be negative.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    } else if (category === "") {
+      Swal.fire({
+        title: 'Warning!',
+        text: 'Please select a valid category.',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    } else if (parseInt(stockSmall) < 0 || parseInt(stockMedium) < 0 || parseInt(stockLarge) < 0) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'Stock quantities cannot be negative.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    } else if (images.length !== 3) {
+      Swal.fire({
+        title: 'Warning!',
+        text: 'Exactly 3 images are required.',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    return true;
   }
-  return true;
-}
+
+  // Handle form submission with AJAX and SweetAlert
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent default form submission
+
+    // Run client-side validation
+    if (!validateForm()) {
+      return;
+    }
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch('/admin/addProducts', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        Swal.fire({
+          title: 'Success!',
+          text: result.message,
+          icon: 'success',
+          confirmButtonText: 'OK'
+        }).then(() => {
+          // Redirect to products page after success
+          window.location.href = '/admin/products?msg=added';
+        });
+      } else {
+        Swal.fire({
+          title: 'Error!',
+          text: result.message,
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        title: 'Error!',
+        text: 'Something went wrong. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+      console.error('Fetch error:', error);
+    }
+  });
 </script>
 
 <%- include('../partials/footer') %>
 
-<!-- Custom Styles -->
+<!-- Custom Styles (unchanged) -->
 <style>
-    .sidebar .logout {
-  margin-top: auto;  /* This will push the logout button to the bottom */
-  background: #e74c3c; /* Optional: Customize the background color */
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
-}
-
-.sidebar .logout:hover {
-  background: #c0392b; /* Optional: Darken on hover */
-}
-
+  .sidebar .logout {
+    margin-top: auto;
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+  }
+  .sidebar .logout:hover {
+    background: #c0392b;
+  }
   .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
   .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
   .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
@@ -227,4 +324,6 @@
   .image-container { display: flex; gap: 10px; }
   .image-element { position: relative; }
   .image-element img { width: 150px; height: 150px; object-fit: contain; }
+  .form-container .row { display: flex; gap: 15px; }
+  .form-container .col { flex: 1; }
 </style>

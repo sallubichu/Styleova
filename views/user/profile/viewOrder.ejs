@@ -185,7 +185,7 @@
                                 <li><a href="/user/profile" class="text-decoration-none text-primary d-block py-2"><button class="btn btn-secondary w-100">Profile</button></a></li>
                                 <li><a href="/user/address" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">Address</button></a></li>
                                 <li><a href="/user/orders" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-primary w-100">My Orders</button></a></li>
-                                <li><a href="/user/viewWishlist" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
+                                <li><a href="/user/getWishlist" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
                                 <li><a href="/user/wallethistory" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">Wallet History</button></a></li>
                                 <li><a href="/user/forgot" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">Change Password</button></a></li>
                             </ul>
@@ -238,15 +238,24 @@
                                             <img src="/<%= pdt.pimages[0] || 'default.jpg' %>" class="card-img-top" alt="Product Image">
                                             <div class="order-item-details card-body">
                                                 <h5 class="card-title"><%= pdt.productId.name %></h5>
-                                                <p>Price: ₹<%= pdt.price %></p>
+                                                <% 
+                                                    const unitPrice = pdt.price; 
+                                                    const totalDiscount = pdt.offerDiscount || 0; 
+                                                    const totalOriginalPrice = unitPrice * pdt.quantity; 
+                                                    const totalPricePaid = totalOriginalPrice - totalDiscount; 
+                                                %>
+                                                <p>Original Price (x<%= pdt.quantity %>): ₹<%= totalOriginalPrice.toFixed(2) %></p>
                                                 <% if(pdt.offerDiscount > 0) { %>
-                                                    <p class="text-success">Offer: -₹<%= pdt.offerDiscount %></p>
+                                                    <p class="text-success">Discount: -₹<%= totalDiscount.toFixed(2) %></p>
+                                                    <p><strong>Total Price Paid: ₹<%= totalPricePaid.toFixed(2) %></strong></p>
+                                                <% } else { %>
+                                                    <p><strong>Total Price Paid: ₹<%= totalOriginalPrice.toFixed(2) %></strong></p>
                                                 <% } %>
                                                 <p>Qty: <%= pdt.quantity %></p>
-                                                <p>Size: <%= pdt.size %></p> <!-- Display size -->
-                                                <p>Status: <%= order.status %></p>
+                                                <p>Size: <%= pdt.size %></p>
+                                                <p>Status: <%= pdt.status %></p>
 
-                                                <% if(order.status === "Pending" || order.status === "Shipped") { %>
+                                                <% if(pdt.status !== "Cancelled" && (order.status === "Pending" || order.status === "Shipped")) { %>
                                                     <button class="btn btn-danger cancel-btn" 
                                                             data-order-id="<%= order._id %>" 
                                                             data-product-id="<%= pdt.productId._id %>"
@@ -254,14 +263,19 @@
                                                             aria-label="Cancel this item">
                                                         Cancel
                                                     </button>
-                                                <% } else if(order.status === "Delivered" && !pdt.returned) { %>
-                                                    <button class="btn btn-danger returnButton" 
+                                                <% } else if(pdt.status === "Cancelled") { %>
+                                                    <p class="text-danger font-weight-bold">Cancelled</p>
+                                                <% } else if(order.status === "Delivered" && !pdt.returned && !pdt.returnRequested) { %>
+                                                    <button class="btn btn-danger request-return-btn" 
                                                             data-order-id="<%= order._id %>" 
                                                             data-product-id="<%= pdt.productId._id %>"
                                                             data-size="<%= pdt.size %>"
-                                                            aria-label="Return this item">
-                                                        Return
+                                                            data-amount="<%= totalPricePaid.toFixed(2) %>"
+                                                            aria-label="Request return for this item">
+                                                        Request Return
                                                     </button>
+                                                <% } else if(pdt.returnRequested) { %>
+                                                    <p class="text-warning font-weight-bold">Return Requested (Pending Approval)</p>
                                                 <% } %>
                                             </div>
                                         </div>
@@ -302,7 +316,12 @@
                                 },
                                 credentials: "include",
                             })
-                            .then(response => response.json())
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
                             .then(data => {
                                 if (data.success) {
                                     Swal.fire('Cancelled!', 'Your item has been canceled.', 'success')
@@ -314,51 +333,61 @@
                                 }
                             })
                             .catch(error => {
-                                Swal.fire('Error!', 'Something went wrong.', 'error');
+                                console.error('Fetch error:', error);
+                                Swal.fire('Error!', `Something went wrong: ${error.message}`, 'error');
                             });
                         }
                     });
                 });
             });
 
-            // Return Button Logic
-            const returnButtons = document.querySelectorAll('.returnButton');
+            // Request Return Button Logic
+            const returnButtons = document.querySelectorAll('.request-return-btn');
             returnButtons.forEach(button => {
                 button.addEventListener('click', function () {
                     const orderId = this.getAttribute('data-order-id');
                     const productId = this.getAttribute('data-product-id');
                     const size = this.getAttribute('data-size');
+                    const amount = parseFloat(this.getAttribute('data-amount'));
 
                     Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to return this item?',
+                        title: 'Request Return',
+                        text: 'Please confirm your return request. It will be reviewed by an admin.',
                         icon: 'warning',
+                        input: 'text',
+                        inputPlaceholder: 'Enter reason for return (optional)',
                         showCancelButton: true,
                         confirmButtonColor: '#3085d6',
                         cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, return it!'
+                        confirmButtonText: 'Submit Request'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            fetch(`/user/returnOrder/${orderId}`, {
+                            const returnReason = result.value || 'No reason provided';
+                            const url = `/user/requestReturn/${orderId}`;
+                            console.log('Sending request to:', url, { productId, size, amount, returnReason });
+
+                            fetch(url, {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ productId: productId, size: size }),
-                                credentials: "include",
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ productId, size, amount, returnReason }),
+                                credentials: 'include'
                             })
-                            .then(response => response.json())
+                            .then(response => {
+                                console.log('Response status:', response.status);
+                                return response.json();
+                            })
                             .then(data => {
+                                console.log('Response data:', data);
                                 if (data.success) {
-                                    Swal.fire('Success!', 'Order has been returned and refunded.', 'success').then(() => {
-                                        location.reload();
-                                    });
+                                    Swal.fire('Request Submitted!', 'Your return request is pending admin approval.', 'success')
+                                        .then(() => location.reload());
                                 } else {
                                     Swal.fire('Error!', data.message, 'error');
                                 }
                             })
                             .catch(error => {
-                                Swal.fire('Error!', 'Something went wrong.', 'error');
+                                console.error('Fetch error:', error);
+                                Swal.fire('Error!', 'Something went wrong with the request.', 'error');
                             });
                         }
                     });

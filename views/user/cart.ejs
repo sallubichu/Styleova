@@ -18,7 +18,7 @@
         <div class="col-12 col-md-8">
             <div class="card mb-4">
                 <div class="card-header py-3">
-                    <h4 class="mb-0">Cart Items - <%= cart && cart.products.length ? cart.products.length : 0 %></h4>
+                    <h4 class="mb-0">Cart Items - <%= cartCount %></h4> <!-- Use cartCount here for consistency -->
                 </div>
                 <div class="card-body">
                     <% if (!cart || cart.products.length === 0) { %>
@@ -56,7 +56,6 @@
                                                 <input 
                                                     id="quantity-<%= product.productId._id %>" 
                                                     min="1" 
-                                                    max="5" 
                                                     name="quantity" 
                                                     value="<%= product.quantity %>" 
                                                     type="number" 
@@ -126,31 +125,28 @@ async function updateQuantity(action, productId, size) {
         return;
     }
 
-    // Check stock before incrementing
-    if (action === "increment" && currentQuantity >= stock) {
-        Swal.fire({
-            title: "Error!",
-            text: "Insufficient stock. Cannot increase quantity.",
-            icon: "error",
-            confirmButtonText: "OK",
-        });
-        return;
-    }
-
     if (action === "increment") {
+        if (currentQuantity >= stock) {
+            Swal.fire({
+                title: "Error!",
+                text: "Cannot add more than available stock.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            return;
+        }
         currentQuantity++;
     } else if (action === "decrement") {
         currentQuantity--;
-    }
-
-    if (currentQuantity < 1) {
-        Swal.fire({
-            title: "Error!",
-            text: "Minimum quantity is 1.",
-            icon: "error",
-            confirmButtonText: "OK",
-        });
-        return;
+        if (currentQuantity < 1) {
+            Swal.fire({
+                title: "Error!",
+                text: "Minimum quantity is 1.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            return;
+        }
     }
 
     try {
@@ -164,7 +160,7 @@ async function updateQuantity(action, productId, size) {
 
         if (response.ok) {
             quantityInput.value = currentQuantity;
-            window.location.reload(); // Reload to reflect updated stock
+            window.location.reload(); // Reload to update badge and stock
         } else {
             Swal.fire({
                 title: "Error!",
@@ -206,7 +202,7 @@ async function deleteProduct(productId, size) {
 
                 if (response.ok) {
                     Swal.fire("Deleted!", "Product has been removed.", "success").then(() => {
-                        window.location.reload();
+                        window.location.reload(); // Reload to update badge
                     });
                 } else {
                     Swal.fire("Error!", data.message || "Failed to remove product.", "error");

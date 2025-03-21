@@ -48,10 +48,21 @@
     color: black;
   }
 
+  .table th, .table td {
+    vertical-align: middle;
+  }
+
+  .table .text-muted {
+    font-size: 0.9em;
+  }
+
   @media (max-width: 768px) {
     .col-lg-3, .col-lg-9 {
       padding-left: 0;
       padding-right: 0;
+    }
+    .table-responsive {
+      font-size: 0.85em;
     }
   }
 </style>
@@ -94,7 +105,7 @@
                 <li><a href="/user/profile" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">Profile</button></a></li>
                 <li><a href="/user/address" class="text-decoration-none d-block py-2"><button class="btn btn-primary w-100">Address</button></a></li>
                 <li><a href="/user/orders" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">My Orders</button></a></li>
-                <li><a href="/user/viewWishlist" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
+                <li><a href="/user/getWishlist" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
                 <li><a href="/user/wallethistory" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">Wallet History</button></a></li>
                 <li><a href="/user/forgot" class="text-decoration-none d-block py-2"><button class="btn btn-secondary w-100">Change Password</button></a></li>
               </ul>
@@ -111,23 +122,29 @@
                   <tr>
                     <th>Date</th>
                     <th>Type</th>
-                    <th>Amount</th>
+                    <th>Original Amount</th>
+                    <th>Discount</th>
+                    <th>Amount Paid</th>
                     <th>Wallet Balance</th>
+                    <th>Reason</th>
                   </tr>
                 </thead>
                 <tbody>
                   <% if (history.length > 0) { %>
                     <% history.forEach(entry => { %>
                       <tr>
-                        <td><%= entry.dateCreated.toLocaleString() %></td>
-                        <td><%= entry.type %></td>
-                        <td><%= entry.amount.toFixed(2) %></td>
-                        <td><%= entry.walletBalance.toFixed(2) %></td>
+                        <td><%= entry.dateCreated ? entry.dateCreated.toLocaleString() : "N/A" %></td>
+                        <td><%= entry.type || "N/A" %></td>
+                        <td><%= (entry.originalAmount || entry.amount || 0).toFixed(2) %></td>
+                        <td><%= (entry.discount || 0).toFixed(2) %></td>
+                        <td><%= (entry.amount || 0).toFixed(2) %></td>
+                        <td><%= (entry.walletBalance || 0).toFixed(2) %></td>
+                        <td><%= entry.reason || "N/A" %></td>
                       </tr>
                     <% }) %>
                   <% } else { %>
                     <tr>
-                      <td colspan="4" class="text-center">No wallet history found.</td>
+                      <td colspan="7" class="text-center">No wallet history found.</td>
                     </tr>
                   <% } %>
                 </tbody>

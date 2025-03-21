@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Styleova</title>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
@@ -14,45 +14,56 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.6.0/dist/sweetalert2.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Bootstrap Datepicker -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        font-family: Arial, sans-serif;
+        font-family: "Poppins", sans-serif;
       }
       body,
       html {
         height: 100%;
+        background: #f4f7fa;
       }
       .admin-container {
         display: flex;
-        height: 100%;
+        height: calc(100% - 56px);
       }
       .sidebar {
-        width: 250px;
-        background: #2c3e50;
+        width: 280px;
+        background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
         color: white;
         padding: 20px;
         display: flex;
         flex-direction: column;
         height: 100%;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        transition: width 0.3s;
       }
       .sidebar .logo {
         text-align: center;
-        font-size: 22px;
-        font-weight: bold;
+        font-size: 24px;
+        font-weight: 600;
         margin-bottom: 30px;
+        letter-spacing: 1px;
       }
       .nav {
         list-style: none;
         padding: 0;
       }
       .nav li {
-        margin: 10px 0;
+        margin: 8px 0;
       }
       .nav a {
         color: white;
@@ -60,73 +71,155 @@
         font-size: 16px;
         display: flex;
         align-items: center;
-        padding: 12px;
-        border-radius: 5px;
-        transition: 0.3s;
+        padding: 12px 15px;
+        border-radius: 8px;
+        transition: all 0.3s;
       }
       .nav a i {
-        margin-right: 10px;
+        margin-right: 12px;
         font-size: 20px;
       }
       .nav a:hover,
       .nav a.active {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateX(5px);
       }
       .content {
         flex-grow: 1;
-        padding: 40px;
-        background-color: white;
+        padding: 30px;
         overflow-y: auto;
         height: 100%;
       }
-      .header {
+      .dashboard-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px;
-        background: #fff;
-        border-bottom: 1px solid #ddd;
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 15px;
       }
-      .footer {
-        background: #2c3e50;
-        color: white;
-        padding: 10px;
-        text-align: center;
-        position: relative;
-        bottom: 0;
-        width: 100%;
+      .filter-select {
+        width: 200px;
       }
-      .sidebar .logout {
-        margin-top: auto; /* This will push the logout button to the bottom */
-        background: #e74c3c; /* Optional: Customize the background color */
+      .date-picker,
+      .granularity-select {
+        width: 150px;
+      }
+      .datepicker {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .datepicker table tr td.active {
+        background-color: #ff7700 !important;
+        border-color: #ff7700 !important;
+      }
+      .datepicker table tr td:hover {
+        background-color: rgba(255, 119, 0, 0.2);
+      }
+      .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        background: white;
+        transition: transform 0.3s, box-shadow 0.3s;
+        overflow: hidden;
+        margin-bottom: 25px;
+      }
+      .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+      }
+      .card-header {
+        background: linear-gradient(135deg, #ff7700 0%, #ff9f43 100%);
         color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        text-decoration: none;
+        padding: 15px 20px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
         display: flex;
         align-items: center;
-        justify-content: center;
-        transition: 0.3s;
+        justify-content: space-between;
       }
-
-      .sidebar .logout:hover {
-        background: #c0392b; /* Optional: Darken on hover */
+      .card-header h5 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .card-header i {
+        font-size: 22px;
+      }
+      .card-body {
+        padding: 20px;
+      }
+      .top-list {
+        max-height: 300px;
+        overflow-y: auto;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .top-list li {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        transition: background 0.2s;
+      }
+      .top-list li:hover {
+        background: #f8f9fa;
+      }
+      .top-list img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+      }
+      .top-list .product-info {
+        flex-grow: 1;
+        font-size: 14px;
+        color: #333;
+      }
+      .top-list .badge {
+        font-size: 12px;
+        padding: 5px 10px;
+      }
+      .ledger-card .card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .ledger-card .btn {
+        align-self: flex-start;
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 80px;
+        }
+        .sidebar .logo,
+        .nav a span {
+          display: none;
+        }
+        .nav a i {
+          margin-right: 0;
+          font-size: 24px;
+        }
+        .dashboard-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .card {
+          margin-bottom: 20px;
+        }
       }
     </style>
   </head>
 
   <body>
-    <!-- Header -->
     <header>
       <nav class="navbar navbar-expand-lg" style="background-color: #ff7700">
         <div class="container-fluid">
-          <a class="navbar-brand" href="/">
-            <em>
-              <h2><i class="bi bi-gem pe-2"></i>Styleova</h2>
-            </em>
+          <a class="navbar-brand text-white" href="/">
+            <h2><i class="bi bi-gem pe-2"></i>Styleova</h2>
           </a>
           <button
             class="navbar-toggler"
@@ -139,15 +232,10 @@
           >
             <span class="navbar-toggler-icon"></span>
           </button>
-          <div
-            class="collapse navbar-collapse justify-content-end"
-            id="navbarNavDropdown"
-          >
+          <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
             <ul class="navbar-nav">
               <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="/admin"
-                  ><i class="bi bi-house"></i> Home</a
-                >
+                <a class="nav-link text-white" href="/admin"><i class="bi bi-house"></i> Home</a>
               </li>
             </ul>
           </div>
@@ -156,134 +244,250 @@
     </header>
 
     <div class="admin-container">
-      <!-- Sidebar -->
       <aside class="sidebar">
         <h3 class="logo">Admin Panel</h3>
         <ul class="nav">
-          <li>
-            <a href="/admin/dashboard" class="active"
-              ><i class="bi bi-speedometer2"></i> Dashboard</a
-            >
-          </li>
-          <li>
-            <a href="/admin/category"><i class="bi bi-tags"></i> Categories</a>
-          </li>
-          <li>
-            <a href="/admin/products"
-              ><i class="bi bi-box-seam"></i> Products</a
-            >
-          </li>
-          <li>
-            <a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a>
-          </li>
-          <li>
-            <a href="/admin/manageOrders"
-              ><i class="bi bi-cart-check"></i> Orders</a
-            >
-          </li>
-          <li>
-            <a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a>
-          </li>
-          <li>
-            <a href="/admin/salesManagement" class="active"
-              ><i class="bi bi-bar-chart-line"></i> Sales Report</a
-            >
-          </li>
-          <li>
-            <a href="/admin/getCoupons" class="active"
-              ><i class="bi bi-ticket-perforated"></i> Coupons</a
-            >
-          </li>
+          <li><a href="/admin/dashboard" class="active"><i class="bi bi-speedometer2"></i> <span>Dashboard</span></a></li>
+          <li><a href="/admin/category"><i class="bi bi-tags"></i> <span>Categories</span></a></li>
+          <li><a href="/admin/products"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
+          <li><a href="/admin/users"><i class="bi bi-people"></i> <span>Manage Users</span></a></li>
+          <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> <span>Orders</span></a></li>
+          <li><a href="/admin/getOffers"><i class="bi bi-percent"></i> <span>Manage Offers</span></a></li>
+          <li><a href="/admin/salesManagement"><i class="bi bi-bar-chart-line"></i> <span>Sales Report</span></a></li>
+          <li><a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> <span>Coupons</span></a></li>
         </ul>
-        <li>
-          <a href="/admin/logout" class="logout"
-            ><i class="bi bi-box-arrow-right"></i> Logout</a
-          >
-        </li>
-        
+        <a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a>
       </aside>
 
-      <!-- Main Content -->
       <main class="content">
-        <div class="dashboard-container">
-          <div class="card">
-            <h2>Welcome, Admin!</h2>
-            <p>This is your admin dashboard. Use the sidebar to navigate.</p>
+        <div class="dashboard-header">
+          <h2 class="fw-bold">Dashboard Overview</h2>
+          <div>
+            <select class="form-select filter-select" id="chartFilter" onchange="toggleCustomDateInputs()">
+              <option value="yearly">Yearly</option>
+              <option value="monthly" selected>Monthly</option>
+              <option value="weekly">Weekly</option>
+              <option value="daily">Daily</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            <div id="customDateInputs" style="display: none; margin-top: 10px;">
+              <input
+                type="text"
+                id="startDate"
+                class="form-control date-picker"
+                placeholder="Start Date (YYYY-MM-DD)"
+                data-date-end-date="0d"
+              />
+              <input
+                type="text"
+                id="endDate"
+                class="form-control date-picker"
+                placeholder="End Date (YYYY-MM-DD)"
+                data-date-end-date="0d"
+                style="margin-top: 5px;"
+              />
+              <select class="form-select granularity-select" id="granularity" style="margin-top: 5px;">
+                <option value="daily" selected>Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+              <button class="btn btn-primary" style="margin-top: 10px;" onclick="fetchChartData()">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Sales Overview (₹)</h5>
+                <i class="bi bi-graph-up"></i>
+              </div>
+              <div class="card-body">
+                <canvas id="salesLineChart" height="120"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Stock Sold (Units)</h5>
+                <i class="bi bi-bar-chart-fill"></i>
+              </div>
+              <div class="card-body">
+                <canvas id="stockBarChart" height="120"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-header">
+                <h5>Top Selling Categories</h5>
+                <i class="bi bi-pie-chart-fill"></i>
+              </div>
+              <div class="card-body">
+                <canvas id="categoryPieChart" height="150"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header">
+                <h5>Top Selling Products</h5>
+                <i class="bi bi-star-fill"></i>
+              </div>
+              <div class="card-body">
+                <ul class="top-list" id="topProducts"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="card ledger-card">
+              <div class="card-header">
+                <h5>Generate Ledger Book</h5>
+                <i class="bi bi-file-earmark-pdf"></i>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Download a detailed ledger book for your records in PDF format.</p>
+                <button class="btn btn-primary" onclick="generateLedger()">
+                  <i class="bi bi-download me-2"></i>Generate Ledger
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
     </div>
 
-    <!-- Footer -->
-    <div class="container-fluid bg-light">
-      <hr />
-      <div class="container">
-        <div class="row">
-          <div class="col-md-3 d-12 d-md-block d-flex justify-content-center">
-            <h3 class="text-center pb-4">
-              <i class="bi bi-gem me-2"></i>Styleova Clothing
-            </h3>
-            <p class="text-center">Kerala's Trendiest Clothing Brand</p>
-            <p class="text-center">
-              Explore our latest collections and stay ahead of fashion trends.
-              Shop with us for quality, style, and comfort.
-            </p>
-            <p>Get in touch with our socials:</p>
-            <p class="text-center">
-              <i class="bi bi-instagram m-2"></i>
-              <i class="bi bi-facebook m-2"></i>
-              <i class="bi bi-whatsapp m-2"></i>
-            </p>
-          </div>
-          <div class="col-md-3 d-none d-md-block">
-            <h4 class="d-flex justify-content-center">Quick Links</h4>
-            <p class="d-flex justify-content-center">Home</p>
-            <p class="d-flex justify-content-center">About Us</p>
-            <p class="d-flex justify-content-center">Offer</p>
-            <p class="d-flex justify-content-center">Services</p>
-            <p class="d-flex justify-content-center">Contact Us</p>
-          </div>
-          <div class="col-md-3 d-none d-md-block d-flex justify-content-center">
-            <h4 class="d-flex justify-content-center">Help Center</h4>
-            <p class="d-flex justify-content-center">FAQ's</p>
-            <p class="d-flex justify-content-center">Payment</p>
-            <p class="d-flex justify-content-center">Returns & Refunds</p>
-            <p class="d-flex justify-content-center">Checkout</p>
-            <p class="d-flex justify-content-center">Delivery Information</p>
-          </div>
-          <div class="col-md-3 d-none d-md-block d-flex justify-content-center">
-            <h3 class="d-flex justify-content-center">Our Newsletter</h3>
-            <p class="mt-4">
-              Subscribe to our newsletter to get updates about our grand offers.
-            </p>
-            <div class="input-group mt-4">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="username"
-                aria-label="Recipient's username"
-                aria-describedby="basic-addon2"
-              />
-              <div class="input-group-append">
-                <span class="input-group-text" id="basic-addon2">Sub !</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="container-fluid">
-      <hr class="m-0" />
-    </div>
-
-    <div class="container bg-light">
-      <p class="text-center p-3 m-0">© 2024 STYLEOVA. All rights reserved.</p>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script>
+      function generateLedger() {
+        const filter = document.getElementById("chartFilter").value;
+        let startDate = "";
+        let endDate = "";
+        if (filter === "custom") {
+          startDate = document.getElementById("startDate").value;
+          endDate = document.getElementById("endDate").value;
+          if (!startDate || !endDate) {
+            Swal.fire({
+              icon: "warning",
+              title: "Missing Dates",
+              text: "Please select both start and end dates for a custom range.",
+            });
+            return;
+          }
+        }
+
+        Swal.fire({
+          title: "Generating Ledger",
+          text: "This will download a PDF ledger book.",
+          icon: "info",
+          showCancelButton: true,
+          confirmButtonText: "Download",
+          cancelButtonText: "Cancel",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch("/admin/generateLedger", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+               
+              },
+              body: JSON.stringify({
+                filterType: filter,
+                startDate: startDate,
+                endDate: endDate,
+                reportType: "pdf",
+              }),
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  return response.text().then((text) => {
+                    console.log("Raw server response:", text); // Log raw response for debugging
+                    try {
+                      const err = JSON.parse(text); // Attempt to parse as JSON
+                      throw new Error(err.message || "Failed to generate ledger");
+                    } catch (e) {
+                      // If parsing fails, assume it's a non-JSON error (e.g., HTML or plain text)
+                      throw new Error(text || "An unexpected server error occurred");
+                    }
+                  });
+                }
+                // Check if the response is a PDF (application/pdf)
+                if (response.headers.get("Content-Type") === "application/pdf") {
+                  return response.blob();
+                } else {
+                  throw new Error("Unexpected response format from server");
+                }
+              })
+              .then((blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `LedgerBook_${filter}_${Date.now()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                Swal.fire({
+                  icon: "success",
+                  title: "Success",
+                  text: "Ledger downloaded successfully!",
+                });
+              })
+              .catch((error) => {
+                console.error("Error generating ledger:", error);
+                Swal.fire({
+                  icon: "error",
+                  title: "Error",
+                  text: error.message || "An unexpected error occurred while generating the ledger",
+                });
+              });
+          }
+        });
+      }
+
+      $(document).ready(function () {
+        $("#startDate").datepicker({
+          format: "yyyy-mm-dd",
+          autoclose: true,
+          todayHighlight: true,
+          endDate: new Date(),
+        }).on("changeDate", function () {
+          const startDate = $(this).val();
+          $("#endDate").datepicker("setStartDate", startDate);
+        });
+
+        $("#endDate").datepicker({
+          format: "yyyy-mm-dd",
+          autoclose: true,
+          todayHighlight: true,
+          endDate: new Date(),
+        }).on("changeDate", function () {
+          const endDate = $(this).val();
+          $("#startDate").datepicker("setEndDate", endDate);
+        });
+      });
+
+      function toggleCustomDateInputs() {
+        const filter = document.getElementById("chartFilter").value;
+        const customDateInputs = document.getElementById("customDateInputs");
+        if (filter === "custom") {
+          customDateInputs.style.display = "block";
+        } else {
+          customDateInputs.style.display = "none";
+          document.getElementById("startDate").value = "";
+          document.getElementById("endDate").value = "";
+          fetchChartData();
+        }
+      }
+    </script>
   </body>
 </html>

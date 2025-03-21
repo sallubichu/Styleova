@@ -6,29 +6,15 @@
   style="background: linear-gradient(135deg, #6a11cb, #2575fc)"
 >
   <div class="container py-3">
-    <!-- Breadcrumb -->
     <nav class="d-flex">
       <h5 class="mb-0">
-        <a
-          href="/user/dashboard"
-          class="text-white-50"
-          style="text-decoration: none"
-          >Home</a
-        >
+        <a href="/user/dashboard" class="text-white-50" style="text-decoration: none">Home</a>
         <span class="text-white mx-2"> > </span>
-        <a
-          href="/user/products"
-          class="text-white"
-          style="text-decoration: none"
-          >Products</a
-        >
+        <a href="/user/products" class="text-white" style="text-decoration: none">Products</a>
         <span class="text-white mx-2"> > </span>
-        <a href="#" class="text-white" style="text-decoration: none"
-          ><%= data.name %></a
-        >
+        <a href="#" class="text-white" style="text-decoration: none"><%= data.name %></a>
       </h5>
     </nav>
-    <!-- Breadcrumb -->
   </div>
 </div>
 
@@ -37,50 +23,29 @@
   <div class="row">
     <!-- Product Images -->
     <div class="col-lg-6">
-      <div
-        id="carouselExampleCaptions"
-        class="carousel slide border rounded-4 mb-3"
-      >
+      <div id="carouselExampleCaptions" class="carousel slide border rounded-4 mb-3">
         <div class="carousel-inner">
-          <% data.images.forEach((image, index)=> { %>
+          <% data.images.forEach((image, index) => { %>
           <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
             <div class="image-container">
-              <img
-                class="d-block w-100"
-                src="/<%= image %>"
-                style="border-radius: 10px"
-              />
+              <img class="d-block w-100" src="/<%= image %>" style="border-radius: 10px" />
               <div class="zoom-lens"></div>
             </div>
           </div>
           <% }) %>
         </div>
-        <button
-          class="carousel-control-prev"
-          type="button"
-          data-bs-target="#carouselExampleCaptions"
-          data-bs-slide="prev"
-        >
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
           <span class="carousel-control-prev-icon" aria-hidden="true"></span>
           <span class="visually-hidden">Previous</span>
         </button>
-        <button
-          class="carousel-control-next"
-          type="button"
-          data-bs-target="#carouselExampleCaptions"
-          data-bs-slide="next"
-        >
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
           <span class="carousel-control-next-icon" aria-hidden="true"></span>
           <span class="visually-hidden">Next</span>
         </button>
       </div>
       <div class="d-flex justify-content-center mb-3">
-        <% data.images.forEach((image, index)=> { %>
-        <a
-          class="border mx-1 rounded-2 item-thumb"
-          href="javascript:void(0)"
-          data-image-index="<%= index %>"
-        >
+        <% data.images.forEach((image, index) => { %>
+        <a class="border mx-1 rounded-2 item-thumb" href="javascript:void(0)" data-image-index="<%= index %>">
           <img width="60" height="60" class="rounded-2" src="/<%= image %>" />
         </a>
         <% }) %>
@@ -90,84 +55,46 @@
     <!-- Product Information -->
     <div class="col-lg-6">
       <div class="ps-lg-3">
-        <h4
-          class="product-title mb-3"
-          style="font-size: 1.5rem; font-weight: 600"
-        >
-          <%= data.name %>
-        </h4>
+        <h4 class="product-title mb-3" style="font-size: 1.5rem; font-weight: 600"><%= data.name %></h4>
         <div class="d-flex flex-row my-3">
           <div class="text-warning mb-1 me-2">
-            <% for (let i = 1; i <= 5; i++) { %> <% if (i <=
-            Math.floor(data.rating)) { %>
+            <% for (let i = 1; i <= 5; i++) { %>
+            <% if (i <= Math.floor(data.rating)) { %>
             <i class="fa fa-star"></i>
-            <% } else if (i === Math.ceil(data.rating) && data.rating % 1 !== 0)
-            { %>
+            <% } else if (i === Math.ceil(data.rating) && data.rating % 1 !== 0) { %>
             <i class="fa fa-star-half-alt"></i>
             <% } else { %>
             <i class="fa fa-star text-muted"></i>
-            <% } %> <% } %>
-            <span class="ms-1" style="font-size: 0.9rem">
-              <%= data.rating %> Rating
-            </span>
+            <% } %>
+            <% } %>
+            <span class="ms-1" style="font-size: 0.9rem"><%= data.rating %> Rating</span>
           </div>
         </div>
         <div class="mb-3">
-          <span
-            class="product-price"
-            style="font-size: 1.25rem; font-weight: 600; color: #28a745"
-          >
-            Rs. <%= data.rate %>
-          </span>
+          <span class="product-price" style="font-size: 1.25rem; font-weight: 600; color: #28a745">Rs. <%= data.rate %></span>
         </div>
-
-        <p
-          class="product-description mb-4"
-          style="font-size: 0.9rem; color: #666"
-        >
-          <%= data.description %>
-        </p>
+        <p class="product-description mb-4" style="font-size: 0.9rem; color: #666"><%= data.description %></p>
 
         <!-- Stock Details by Size -->
-        <div class="mb-4">
-          <h6 class="mb-3" style="font-size: 1rem; font-weight: 500">
-            Availability by Size:
-          </h6>
+        <div class="mb-4" id="stockDetails">
+          <h6 class="mb-3" style="font-size: 1rem; font-weight: 500">Availability by Size:</h6>
           <div class="d-flex gap-3">
-            <div class="size-stock">
-              <span class="d-block" style="font-size: 0.9rem; color: #333"
-                >Small</span
-              >
-              <span
-                class="badge <%= data.stock.Small > 0 ? 'bg-success' : 'bg-danger' %>"
-                style="font-size: 0.85rem"
-              >
-                <%= data.stock.Small > 0 ? `In Stock (${data.stock.Small})` :
-                'Out of Stock' %>
+            <div class="size-stock" data-size="Small">
+              <span class="d-block" style="font-size: 0.9rem; color: #333">Small</span>
+              <span class="badge <%= data.stock.Small > 0 ? 'bg-success' : 'bg-danger' %>" style="font-size: 0.85rem" id="stock-Small">
+                <%= data.stock.Small > 0 ? `In Stock (${data.stock.Small})` : 'Out of Stock' %>
               </span>
             </div>
-            <div class="size-stock">
-              <span class="d-block" style="font-size: 0.9rem; color: #333"
-                >Medium</span
-              >
-              <span
-                class="badge <%= data.stock.Medium > 0 ? 'bg-success' : 'bg-danger' %>"
-                style="font-size: 0.85rem"
-              >
-                <%= data.stock.Medium > 0 ? `In Stock (${data.stock.Medium})` :
-                'Out of Stock' %>
+            <div class="size-stock" data-size="Medium">
+              <span class="d-block" style="font-size: 0.9rem; color: #333">Medium</span>
+              <span class="badge <%= data.stock.Medium > 0 ? 'bg-success' : 'bg-danger' %>" style="font-size: 0.85rem" id="stock-Medium">
+                <%= data.stock.Medium > 0 ? `In Stock (${data.stock.Medium})` : 'Out of Stock' %>
               </span>
             </div>
-            <div class="size-stock">
-              <span class="d-block" style="font-size: 0.9rem; color: #333"
-                >Large</span
-              >
-              <span
-                class="badge <%= data.stock.Large > 0 ? 'bg-success' : 'bg-danger' %>"
-                style="font-size: 0.85rem"
-              >
-                <%= data.stock.Large > 0 ? `In Stock (${data.stock.Large})` :
-                'Out of Stock' %>
+            <div class="size-stock" data-size="Large">
+              <span class="d-block" style="font-size: 0.9rem; color: #333">Large</span>
+              <span class="badge <%= data.stock.Large > 0 ? 'bg-success' : 'bg-danger' %>" style="font-size: 0.85rem" id="stock-Large">
+                <%= data.stock.Large > 0 ? `In Stock (${data.stock.Large})` : 'Out of Stock' %>
               </span>
             </div>
           </div>
@@ -177,12 +104,7 @@
         <div class="row mb-4">
           <div class="col-md-4 col-6">
             <label class="mb-2 d-block" style="font-size: 0.9rem">Size</label>
-            <select
-              class="form-select border border-secondary"
-              style="height: 35px"
-              id="sizeSelector"
-              required
-            >
+            <select class="form-select border border-secondary" style="height: 35px" id="sizeSelector" required>
               <option value="" disabled selected>Select Size</option>
               <option value="Small">Small</option>
               <option value="Medium">Medium</option>
@@ -190,15 +112,9 @@
             </select>
           </div>
           <div class="col-md-4 col-6 mb-3">
-            <label class="mb-2 d-block" style="font-size: 0.9rem"
-              >Quantity</label
-            >
+            <label class="mb-2 d-block" style="font-size: 0.9rem">Quantity</label>
             <div class="input-group mb-3" style="width: 170px">
-              <button
-                class="btn btn-white border border-secondary px-3"
-                type="button"
-                id="button-addon1"
-              >
+              <button class="btn btn-white border border-secondary px-3" type="button" id="button-addon1" disabled>
                 <i class="fas fa-minus"></i>
               </button>
               <input
@@ -208,14 +124,10 @@
                 placeholder="1"
                 aria-label="Quantity"
                 min="1"
-                max="5"
                 value="1"
+                readonly
               />
-              <button
-                class="btn btn-white border border-secondary px-3"
-                type="button"
-                id="button-addon2"
-              >
+              <button class="btn btn-white border border-secondary px-3" type="button" id="button-addon2" disabled>
                 <i class="fas fa-plus"></i>
               </button>
             </div>
@@ -224,19 +136,10 @@
 
         <!-- Buttons -->
         <div class="d-flex gap-3">
-          <button
-            id="wishListButton"
-            class="btn btn-danger"
-            onclick="addToWishList()"
-            data-id="<%= data._id %>"
-          >
+          <button id="wishListButton" class="btn btn-danger" onclick="addToWishList()" data-id="<%= data._id %>">
             <i class="bi bi-heart"></i> Add to Wishlist
           </button>
-          <button
-            class="btn btn-primary addToCart"
-            onclick="addToCart(this)"
-            data-id="<%= data._id %>"
-          >
+          <button class="btn btn-primary addToCart" onclick="addToCart(this)" data-id="<%= data._id %>" disabled>
             <i class="me-1 fa fa-shopping-basket"></i> Add to cart
           </button>
         </div>
@@ -246,11 +149,11 @@
 </div>
 
 <!-- Similar Products -->
-<% if (similar.length> 0) { %>
+<% if (similar.length > 0) { %>
 <div class="container mt-5">
   <h2 class="text-center mb-4" style="color: #6a11cb">Similar Products</h2>
   <div class="row justify-content-center">
-    <% similar.forEach(product=> { %>
+    <% similar.forEach(product => { %>
     <div class="col-12 col-md-6 col-lg-4 mb-4">
       <div class="card h-100 shadow-lg border-0">
         <div class="card-img-top overflow-hidden" style="height: 200px">
@@ -267,24 +170,20 @@
           <div class="d-flex justify-content-between align-items-center">
             <span class="text-success fw-bold">Rs. <%= product.rate %></span>
             <span class="text-warning">
-              <% for (let i=1; i <=5; i++) { %> <% if (i
-              <=Math.floor(product.rating)) { %>
+              <% for (let i = 1; i <= 5; i++) { %>
+              <% if (i <= Math.floor(product.rating)) { %>
               <i class="fa fa-star"></i>
-              <% } else if (i===Math.ceil(product.rating) && product.rating % 1
-              !==0) { %>
+              <% } else if (i === Math.ceil(product.rating) && product.rating % 1 !== 0) { %>
               <i class="fa fa-star-half-alt"></i>
               <% } else { %>
               <i class="fa fa-star text-muted"></i>
-              <% } %> <% } %>
+              <% } %>
+              <% } %>
             </span>
           </div>
         </div>
         <div class="card-footer bg-transparent border-0">
-          <a
-            href="/user/productDetailed/<%= product._id %>"
-            class="btn btn-primary w-100"
-            >View Details</a
-          >
+          <a href="/user/productDetailed/<%= product._id %>" class="btn btn-primary w-100">View Details</a>
         </div>
       </div>
     </div>
@@ -312,29 +211,17 @@
     // Zoom lens functionality
     images.forEach((img, i) => {
       const lens = lenses[i];
-
       img.addEventListener("mousemove", (e) => {
         const rect = img.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-
-        const lensX = Math.max(
-          0,
-          Math.min(rect.width - lens.offsetWidth, x - lens.offsetWidth / 2)
-        );
-        const lensY = Math.max(
-          0,
-          Math.min(rect.height - lens.offsetHeight, y - lens.offsetHeight / 2)
-        );
-
+        const lensX = Math.max(0, Math.min(rect.width - lens.offsetWidth, x - lens.offsetWidth / 2));
+        const lensY = Math.max(0, Math.min(rect.height - lens.offsetHeight, y - lens.offsetHeight / 2));
         const zoomFactor = 2;
         const backgroundSizeX = rect.width * zoomFactor;
         const backgroundSizeY = rect.height * zoomFactor;
-
-        const backgroundPosX =
-          (lensX / rect.width) * (backgroundSizeX - lens.offsetWidth);
-        const backgroundPosY =
-          (lensY / rect.height) * (backgroundSizeY - lens.offsetHeight);
+        const backgroundPosX = (lensX / rect.width) * (backgroundSizeX - lens.offsetWidth);
+        const backgroundPosY = (lensY / rect.height) * (backgroundSizeY - lens.offsetHeight);
 
         lens.style.left = `${lensX}px`;
         lens.style.top = `${lensY}px`;
@@ -351,14 +238,92 @@
         lens.style.display = "block";
       });
     });
+
+    // Quantity control and stock check
+    const minusButton = document.getElementById("button-addon1");
+    const plusButton = document.getElementById("button-addon2");
+    const quantityInput = document.getElementById("quantityInput");
+    const sizeSelector = document.getElementById("sizeSelector");
+    const addToCartButton = document.querySelector(".addToCart");
+    const initialStockData = <%- JSON.stringify(data.stock) %>; // Initial stock from server
+
+    function updateStockDisplay(size, stock) {
+      const stockBadge = document.getElementById(`stock-${size}`);
+      if (stock > 0) {
+        stockBadge.textContent = `In Stock (${stock})`;
+        stockBadge.classList.remove("bg-danger");
+        stockBadge.classList.add("bg-success");
+      } else {
+        stockBadge.textContent = "Out of Stock";
+        stockBadge.classList.remove("bg-success");
+        stockBadge.classList.add("bg-danger");
+      }
+    }
+
+    function updateQuantityControls() {
+      const selectedSize = sizeSelector.value;
+      const stock = selectedSize && selectedSize !== "" ? initialStockData[selectedSize] || 0 : -1;
+      const currentQuantity = parseInt(quantityInput.value) || 1;
+
+      console.log(`Size: ${selectedSize}, Stock: ${stock}, Current Quantity: ${currentQuantity}`);
+
+      if (stock === -1) { // No size selected
+        quantityInput.disabled = true;
+        minusButton.disabled = true;
+        plusButton.disabled = true;
+        addToCartButton.disabled = true;
+        addToCartButton.textContent = "Select Size First";
+      } else if (stock <= 0) { // Out of stock
+        quantityInput.value = 0;
+        quantityInput.disabled = true;
+        minusButton.disabled = true;
+        plusButton.disabled = true;
+        addToCartButton.disabled = true;
+        addToCartButton.textContent = "Out of Stock";
+      } else { // In stock
+        quantityInput.disabled = false;
+        minusButton.disabled = currentQuantity <= 1;
+        plusButton.disabled = currentQuantity >= stock; // Only limit by stock
+        addToCartButton.disabled = false;
+        addToCartButton.textContent = "Add to cart";
+      }
+    }
+
+    function updateQuantity(change) {
+      const selectedSize = sizeSelector.value;
+      if (!selectedSize || selectedSize === "") return;
+
+      const stock = initialStockData[selectedSize] || 0;
+      let currentQuantity = parseInt(quantityInput.value) || 0;
+      const newQuantity = currentQuantity + change;
+
+      console.log(`Updating Quantity - Change: ${change}, Stock: ${stock}, Current: ${currentQuantity}, New: ${newQuantity}`);
+
+      if (newQuantity >= 1 && newQuantity <= stock) {
+        quantityInput.value = newQuantity;
+      } else {
+        console.log(`Quantity update blocked - New Quantity: ${newQuantity}, Stock: ${stock}`);
+      }
+      updateQuantityControls();
+    }
+
+    // Initial setup
+    updateQuantityControls();
+
+    // Event listeners
+    minusButton.addEventListener("click", () => updateQuantity(-1));
+    plusButton.addEventListener("click", () => updateQuantity(1));
+
+    sizeSelector.addEventListener("change", function () {
+      quantityInput.value = 1; // Reset quantity
+      updateQuantityControls();
+    });
+
+    // Remove the input event listener since input is readonly
   });
 </script>
 
-<script
-  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-  integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-  crossorigin="anonymous"
-></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 <script>
   async function addToCart(button) {
@@ -396,8 +361,8 @@
       } else if (data.message === "Quantity exceeds available stock") {
         Swal.fire({
           icon: "warning",
-          title: "Quantity Limit Reached",
-          text: "You have reached the maximum quantity for this product.",
+          title: "Stock Limit Reached",
+          text: "Requested quantity exceeds available stock.",
         });
       } else if (data.message === "nouser") {
         Swal.fire({
@@ -416,9 +381,7 @@
         Swal.fire({
           icon: "error",
           title: "Error",
-          text:
-            data.message ||
-            "An error occurred while adding the product to your cart.",
+          text: data.message || "An error occurred while adding the product to your cart.",
         });
       }
     } catch (error) {
@@ -473,55 +436,12 @@
       });
     }
   }
-  document.addEventListener("DOMContentLoaded", function () {
-    const minusButton = document.getElementById("button-addon1");
-    const plusButton = document.getElementById("button-addon2");
-    const quantityInput = document.getElementById("quantityInput");
-
-    function updateQuantity(change) {
-      let currentQuantity = parseInt(quantityInput.value);
-      if (isNaN(currentQuantity) || currentQuantity < 1) {
-        currentQuantity = 1;
-      }
-
-      const newQuantity = currentQuantity + change;
-      if (newQuantity >= 1 && newQuantity <= 5) {
-        quantityInput.value = newQuantity;
-      }
-    }
-
-    minusButton.addEventListener("click", function () {
-      updateQuantity(-1);
-    });
-
-    plusButton.addEventListener("click", function () {
-      updateQuantity(1);
-    });
-
-    quantityInput.addEventListener("input", function () {
-      let currentQuantity = parseInt(quantityInput.value);
-      if (isNaN(currentQuantity) || currentQuantity < 1) {
-        quantityInput.value = 1;
-      } else if (currentQuantity > 5) {
-        quantityInput.value = 5;
-      }
-    });
-  });
-</script>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    if (<%= data.stockQuantity %> <= 0) {
-      document.querySelector(".addToCart").disabled = true;
-      document.querySelector(".addToCart").textContent = "Out of Stock";
-    }
-  });
 </script>
 
 <style>
   .zoom-lens {
     position: absolute;
-    width: 100px; /* Adjust the size of the lens */
+    width: 100px;
     height: 100px;
     border: 2px solid #fff;
     border-radius: 50%;

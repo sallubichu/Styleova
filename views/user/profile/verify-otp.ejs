@@ -1,0 +1,52 @@
+<%- include('../../partials/userHeader') %>
+
+<style>
+  .container {
+    max-width: 500px;
+    margin-top: 50px;
+  }
+  .card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+  }
+  .form-control, .btn {
+    border-radius: 8px;
+  }
+</style>
+
+<div class="container">
+  <div class="card">
+    <h2 class="text-center mb-4">Verify OTP</h2>
+
+    <form action="/user/verify-otp" method="POST">
+      <div class="mb-3">
+        <label for="otp" class="form-label">Enter OTP</label>
+        <input type="text" class="form-control" id="otp" name="otp" required>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">Verify</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>
+
+<!-- Include SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // Check URL query parameters for alert
+  const urlParams = new URLSearchParams(window.location.search);
+  const alertType = urlParams.get('alert');
+  const alertMessage = urlParams.get('message');
+
+  if (alertType && alertMessage) {
+    Swal.fire({
+      icon: alertType, // 'success', 'error', 'info'
+      title: alertType.charAt(0).toUpperCase() + alertType.slice(1),
+      text: alertMessage,
+      confirmButtonText: 'OK'
+    });
+  }
+</script>

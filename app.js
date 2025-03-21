@@ -13,6 +13,9 @@ const jwtSecret = process.env.JWT_SECRET_KEY;
 const route = require("./routes/routes");
 const nocache = require("nocache");
 const connectDB = require("./config/database");
+const morgan = require('morgan');
+const {verifyUser} = require("./middlewares/authMiddleware.js");
+const cartWishlistMiddleware = require("./middlewares/cartWishlistMiddleware.js");
 
 const passport = require("passport");
 
@@ -49,6 +52,13 @@ app.use(flash());
 // Set view engine to EJS
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+app.use(verifyUser);
+
+// Cart and Wishlist count middleware
+app.use(cartWishlistMiddleware);
+
+// Add Morgan middleware for logging requests
+app.use(morgan(':method :url :status :response-time ms - :res[content-length]'));
 
 // Middleware to pass flash messages to the view
 app.use((req, res, next) => {

@@ -1,7 +1,9 @@
 const Wishlist = require("../models/wishlistModel");
 const Product = require("../models/productModel");
 const mongoose = require("mongoose");
+const HttpStatus = require('../utils/httpStatus'); // Import the enum
 
+// Get Wishlist
 exports.getWishlist = async (req, res) => {
   try {
     let user = req.user;
@@ -29,7 +31,7 @@ exports.getWishlist = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).render("error", { message: "Server Error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render("error", { message: "Server Error" });
   }
 };
 
@@ -40,11 +42,11 @@ exports.addToWishlist = async (req, res) => {
     const userId = req.user ? req.user._id : req.body.userId;
 
     if (!userId) {
-      return res.status(400).json({ message: "nouser" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: "nouser" });
     }
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: "Invalid product ID" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: "Invalid product ID" });
     }
 
     let wishlist = await Wishlist.findOne({ userId });
@@ -62,16 +64,16 @@ exports.addToWishlist = async (req, res) => {
     );
 
     if (alreadyExists) {
-      return res.status(400).json({ message: "exists" });
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: "exists" });
     }
 
     wishlist.products.push(new mongoose.Types.ObjectId(productId));
     await wishlist.save();
 
-    res.status(200).json({ message: "added", wishlist });
+    res.status(HttpStatus.OK).json({ message: "added", wishlist });
   } catch (error) {
     console.error("Error in addToWishlist:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
 
@@ -79,7 +81,7 @@ exports.addToWishlist = async (req, res) => {
 exports.removeFromWishlist = async (req, res) => {
   console.log("delete button triggered");
   try {
-    if (!req.user) return res.status(401).json({ message: "nouser" });
+    if (!req.user) return res.status(HttpStatus.UNAUTHORIZED).json({ message: "nouser" });
 
     const userId = req.user._id;
     const { id } = req.params;
@@ -91,10 +93,10 @@ exports.removeFromWishlist = async (req, res) => {
     );
     console.log(response);
     res
-      .status(response ? 200 : 500)
+      .status(response ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR)
       .json({ message: response ? "success" : "Server Error" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to remove from wishlist" });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: "Failed to remove from wishlist" });
   }
 };

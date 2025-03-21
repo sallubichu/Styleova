@@ -1,211 +1,306 @@
 <%- include('../partials/adminHeader') %>
 
 <div class="admin-container">
-  <!-- Sidebar -->
   <aside class="sidebar">
     <h3 class="logo">Admin Panel</h3>
     <ul class="nav">
-      <li>
-        <a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
-      </li>
-      <li>
-        <a href="/admin/category"><i class="bi bi-tags"></i> Categories</a>
-      </li>
-      <li>
-        <a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a>
-      </li>
-      <li>
-        <a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a>
-      </li>
-      <li>
-        <a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a>
-      </li>
-      <li>
-        <a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a>
-      </li>
-      <li>
-        <a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> Coupons</a>
-      </li>
-      <li>
-        <a href="/admin/salesManagement" class="active"><i class="bi bi-bar-chart-line"></i> Sales Management</a>
-      </li>
+      <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="/admin/category"><i class="bi bi-tags"></i> Categories</a></li>
+      <li><a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a></li>
+      <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
+      <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
+      <li><a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a></li>
+      <li><a href="/admin/salesManagement" class="active"><i class="bi bi-bar-chart-line"></i> Sales Report</a></li>
+      <li><a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> Coupons</a></li>
     </ul>
-    <li>
-      <a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
-    </li>
+    <a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </aside>
 
-  <!-- Main Content -->
   <main class="content">
-    <div class="header d-flex justify-content-between align-items-center">
-      <h3>Sales Management</h3>
+    <div class="header">
+      <h3>Sales Report</h3>
     </div>
 
-    <!-- Sales Report Form -->
-    <div class="table-container">
-      <h4 class="text-center">Generate Sales Report</h4>
-      <form id="salesReportForm" action="/admin/salesReport" method="POST">
+    <div class="card">
+      <h4>Generate Sales Report</h4>
+      <form id="salesReportForm" action="/admin/generateSalesReport" method="POST">
         <div class="mb-3">
-          <label for="filterType" class="form-label">Select Filter Type:</label>
+          <label for="filterType" class="form-label">Filter Type</label>
           <select class="form-select" id="filterType" name="filterType">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-            <option value="custom">Custom</option>
+            <option value="daily" <%= filterType === "daily" ? "selected" : "" %>>Daily</option>
+            <option value="weekly" <%= filterType === "weekly" ? "selected" : "" %>>Weekly</option>
+            <option value="monthly" <%= filterType === "monthly" ? "selected" : "" %>>Monthly</option>
+            <option value="yearly" <%= filterType === "yearly" ? "selected" : "" %>>Yearly</option>
+            <option value="custom" <%= filterType === "custom" ? "selected" : "" %>>Custom</option>
           </select>
         </div>
-        <div id="customDateInputs" class="mb-3" style="display: none">
-          <div class="mb-3">
-            <label for="startDate" class="form-label">Start Date:</label>
-            <input type="date" class="form-control" id="startDate" name="startDate" />
-          </div>
-          <div class="mb-3">
-            <label for="endDate" class="form-label">End Date:</label>
-            <input type="date" class="form-control" id="endDate" name="endDate" />
-          </div>
+
+        <div id="customDateInputs" class="mb-3" style="display: <%= filterType === 'custom' ? 'block' : 'none' %>">
+          <label for="startDate" class="form-label">Start Date</label>
+          <input type="date" class="form-control mb-2" id="startDate" name="startDate" value="<%= startDate || '' %>" />
+          <label for="endDate" class="form-label">End Date</label>
+          <input type="date" class="form-control" id="endDate" name="endDate" value="<%= endDate || '' %>" />
         </div>
-        <div class="d-flex flex-column flex-md-row justify-content-between">
-          <button type="submit" class="btn btn-primary mb-2 mb-md-0" name="reportType" value="view">
-            View Report
-          </button>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" name="reportType" value="json">View Report</button>
         </div>
       </form>
     </div>
 
-    <!-- Sales Data Table -->
-    <div class="table-container mt-4">
-      <h4 class="text-center">Sales Data</h4>
-      <table class="user-table">
-        <thead>
-          <tr>
-            <th>Period</th>
-            <th>Total Sales</th>
-            <th>Total Amount</th>
-            <th>Total Discount</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% salesData.forEach(sale => { %>
-          <tr>
-            <td><%= sale.period %></td>
-            <td><%= sale.totalSales %></td>
-            <td><%= sale.totalAmount.toFixed(2) %></td>
-            <td><%= sale.totalDiscount.toFixed(2) %></td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+    <div class="card mt-4">
+      <h4>Sales Summary</h4>
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
+      <div class="summary">
+        <p><strong>Total Sales:</strong> <%= overallSales || 0 %></p>
+        <p><strong>Total Amount:</strong> $<%= (overallAmount || 0).toFixed(2) %></p>
+        <p><strong>Coupon Discount:</strong> $<%= (overallCouponDiscount || 0).toFixed(2) %></p>
+        <p><strong>Total Discount:</strong> $<%= (overallTotalDiscount || 0).toFixed(2) %></p>
+      </div>
 
-    <!-- PDF and Excel Report Buttons -->
-    <div class="table-container mt-4">
-      <form id="pdfExcelReportForm" action="/admin/salesReport" method="POST">
-        <input type="hidden" id="pdfExcelFilterType" name="filterType" />
-        <input type="hidden" id="pdfExcelStartDate" name="startDate" />
-        <input type="hidden" id="pdfExcelEndDate" name="endDate" />
-        <input type="hidden" id="pdfExcelReportType" name="reportType" />
-        <div class="d-flex flex-column flex-md-row justify-content-between">
-          <button type="submit" class="btn btn-danger mb-2 mb-md-0" onclick="setReportType('pdf')">
-            PDF Report
-          </button>
-          <button type="submit" class="btn btn-success" onclick="setReportType('excel')">
-            Excel Report
-          </button>
+      <h5 class="mt-3">Period-wise Details</h5>
+      <div id="periodAccordion" class="accordion">
+        <% (periodData || []).forEach((period, index) => { %>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading<%= index %>">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<%= index %>" aria-expanded="<%= index === 0 ? 'true' : 'false' %>" aria-controls="collapse<%= index %>">
+                <%= period.period %> (Sales: <%= period.sales %>)
+              </button>
+            </h2>
+            <div id="collapse<%= index %>" class="accordion-collapse collapse <%= index === 0 ? 'show' : '' %>" aria-labelledby="heading<%= index %>">
+              <div class="accordion-body">
+                <p><strong>Total Amount:</strong> $<%= period.amount %></p>
+                <p><strong>Total Discount:</strong> $<%= period.totalDiscount %></p>
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Payment</th>
+                      <th>Amount</th>
+                      <th>Coupon Disc.</th>
+                      <th>Net Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% period.orders.forEach(order => { %>
+                      <tr data-bs-toggle="collapse" data-bs-target="#items<%= order.orderId %>" class="accordion-toggle">
+                        <td><%= order.orderId.toString().slice(-6) %></td>
+                        <td><%= new Date(order.date).toLocaleDateString() %></td>
+                        <td><%= order.customerEmail %></td>
+                        <td><%= order.paymentMethod %> (<%= order.paymentStatus %>)</td>
+                        <td>$<%= order.amount.toFixed(2) %></td>
+                        <td>$<%= order.couponDiscount.toFixed(2) %></td>
+                        <td>$<%= (order.amount - order.couponDiscount).toFixed(2) %></td>
+                      </tr>
+                      <tr>
+                        <td colspan="7" class="p-0">
+                          <div id="items<%= order.orderId %>" class="collapse">
+                            <div class="p-2">
+                              <p><strong>Shipping:</strong> <%= order.shippingAddress %></p>
+                              <table class="table table-sm mb-0">
+                                <thead>
+                                  <tr>
+                                    <th>Product</th>
+                                    <th>Description</th>
+                                    <th>Size</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <% order.items.forEach(item => { %>
+                                    <tr>
+                                      <td><%= item.name %></td>
+                                      <td><%= item.description %></td>
+                                      <td><%= item.size %></td>
+                                      <td><%= item.quantity %></td>
+                                      <td>$<%= item.price %></td>
+                                    </tr>
+                                  <% }) %>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+        <% if (!(periodData && periodData.length)) { %>
+          <p class="text-muted">No data available for the selected period.</p>
+        <% } %>
+      </div>
+
+      <form id="exportForm" action="/admin/generateSalesReport" method="POST" class="mt-3">
+        <input type="hidden" id="exportFilterType" name="filterType" value="<%= filterType || 'monthly' %>" />
+        <input type="hidden" id="exportStartDate" name="startDate" value="<%= startDate || '' %>" />
+        <input type="hidden" id="exportEndDate" name="endDate" value="<%= endDate || '' %>" />
+        <input type="hidden" id="exportReportType" name="reportType" />
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-danger" onclick="setExportType('pdf')">Export PDF</button>
+          <button type="submit" class="btn btn-success" onclick="setExportType('excel')">Export Excel</button>
         </div>
       </form>
     </div>
   </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  function setReportType(type) {
-    document.getElementById("pdfExcelReportType").value = type;
+  function setExportType(type) {
+    document.getElementById("exportReportType").value = type;
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", () => {
     const filterTypeSelect = document.getElementById("filterType");
     const customDateInputs = document.getElementById("customDateInputs");
     const startDateInput = document.getElementById("startDate");
     const endDateInput = document.getElementById("endDate");
+    const token = "<%= token || '' %>";
 
-    // Show/hide custom date inputs based on filter type
-    filterTypeSelect.addEventListener("change", function () {
-      if (this.value === "custom") {
-        customDateInputs.style.display = "block";
-      } else {
-        customDateInputs.style.display = "none";
-      }
-    });
+    function toggleDateInputs() {
+      customDateInputs.style.display = filterTypeSelect.value === "custom" ? "block" : "none";
+    }
+    toggleDateInputs();
+    filterTypeSelect.addEventListener("change", toggleDateInputs);
 
-    // Handle the sales report form submission with AJAX (for view report)
-    const salesReportForm = document.getElementById("salesReportForm");
-
-    salesReportForm.addEventListener("submit", async function (event) {
-      event.preventDefault(); // Prevent default form submission
-
+    document.getElementById("salesReportForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       const filterType = filterTypeSelect.value;
       const startDate = startDateInput.value;
       const endDate = endDateInput.value;
-      const reportType = "view"; // Add this line
 
-      // Prepare the request body for the data
-      const requestBody = { filterType, reportType }; // Include reportType
+      if (filterType === "custom" && (!startDate || !endDate || new Date(startDate) > new Date(endDate))) {
+        Swal.fire({ icon: "warning", title: "Invalid Date Range", text: "Please provide a valid start and end date." });
+        return;
+      }
 
-      // If the filter type is custom, add start and end dates
+      const requestBody = { filterType, reportType: "json" };
       if (filterType === "custom") {
         requestBody.startDate = startDate;
         requestBody.endDate = endDate;
       }
 
       try {
-        const response = await fetch("/admin/salesReport", {
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const response = await fetch("/admin/generateSalesReport", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch sales data");
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch sales data");
         }
 
         const data = await response.json();
-        updateSalesTable(data.salesData);
+        document.getElementById("exportFilterType").value = filterType;
+        document.getElementById("exportStartDate").value = requestBody.startDate || "";
+        document.getElementById("exportEndDate").value = requestBody.endDate || "";
+
+        document.querySelector(".summary").innerHTML = `
+          <p><strong>Total Sales:</strong> ${data.overallSales || 0}</p>
+          <p><strong>Total Amount:</strong> $${(data.overallAmount || 0).toFixed(2)}</p>
+          <p><strong>Coupon Discount:</strong> $${(data.overallCouponDiscount || 0).toFixed(2)}</p>
+          <p><strong>Total Discount:</strong> $${(data.overallTotalDiscount || 0).toFixed(2)}</p>
+        `;
+
+        const accordion = document.getElementById("periodAccordion");
+        accordion.innerHTML = "";
+        if (data.periodData?.length) {
+          data.periodData.forEach((period, index) => {
+            const div = document.createElement("div");
+            div.className = "accordion-item";
+            div.innerHTML = `
+              <h2 class="accordion-header" id="heading${index}">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="${index === 0}" aria-controls="collapse${index}">
+                  ${period.period} (Sales: ${period.sales})
+                </button>
+              </h2>
+              <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? "show" : ""}" aria-labelledby="heading${index}">
+                <div class="accordion-body">
+                  <p><strong>Total Amount:</strong> $${period.amount}</p>
+                  <p><strong>Total Discount:</strong> $${period.totalDiscount}</p>
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Payment</th>
+                        <th>Amount</th>
+                        <th>Coupon Disc.</th>
+                        <th>Net Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${period.orders.map((order) => `
+                        <tr data-bs-toggle="collapse" data-bs-target="#items${order.orderId}" class="accordion-toggle">
+                          <td>${order.orderId.toString().slice(-6)}</td>
+                          <td>${new Date(order.date).toLocaleDateString()}</td>
+                          <td>${order.customerEmail}</td>
+                          <td>${order.paymentMethod} (${order.paymentStatus})</td>
+                          <td>$${order.amount.toFixed(2)}</td>
+                          <td>$${order.couponDiscount.toFixed(2)}</td>
+                          <td>$${(order.amount - order.couponDiscount).toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td colspan="7" class="p-0">
+                            <div id="items${order.orderId}" class="collapse">
+                              <div class="p-2">
+                                <p><strong>Shipping:</strong> ${order.shippingAddress}</p>
+                                <table class="table table-sm mb-0">
+                                  <thead>
+                                    <tr>
+                                      <th>Product</th>
+                                      <th>Description</th>
+                                      <th>Size</th>
+                                      <th>Qty</th>
+                                      <th>Price</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    ${order.items.map((item) => `
+                                      <tr>
+                                        <td>${item.name}</td>
+                                        <td>${item.description}</td>
+                                        <td>${item.size}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>$${item.price}</td>
+                                      </tr>
+                                    `).join("")}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      `).join("")}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+            accordion.appendChild(div);
+          });
+        } else {
+          accordion.innerHTML = '<p class="text-muted">No data available for the selected period.</p>';
+        }
       } catch (error) {
-        console.error("Error fetching sales data:", error);
+        Swal.fire({ icon: "error", title: "Error", text: error.message });
       }
-    });
-
-    // Function to update the sales data table
-    function updateSalesTable(salesData) {
-      const tableBody = document.querySelector("table.user-table tbody");
-      tableBody.innerHTML = ""; // Clear existing rows
-
-      salesData.forEach((sale) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-        <td>${sale.period}</td>
-        <td>${sale.totalSales}</td>
-        <td>${sale.totalAmount.toFixed(2)}</td>
-        <td>${sale.totalDiscount.toFixed(2)}</td>
-      `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    // Handle the PDF and Excel report generation form submission (for download)
-    const pdfExcelReportForm = document.getElementById("pdfExcelReportForm");
-    const pdfExcelFilterType = document.getElementById("pdfExcelFilterType");
-    const pdfExcelStartDate = document.getElementById("pdfExcelStartDate");
-    const pdfExcelEndDate = document.getElementById("pdfExcelEndDate");
-
-    pdfExcelReportForm.addEventListener("submit", function () {
-      // Set the hidden inputs for filter type and dates
-      pdfExcelFilterType.value = filterTypeSelect.value;
-      pdfExcelStartDate.value = startDateInput.value;
-      pdfExcelEndDate.value = endDateInput.value;
     });
   });
 </script>
@@ -215,7 +310,7 @@
 <style>
   .admin-container {
     display: flex;
-    height: 100vh;
+    min-height: 100vh;
     background: #f5f5f5;
   }
   .sidebar {
@@ -227,14 +322,15 @@
     flex-direction: column;
   }
   .sidebar .logo {
-    text-align: center;
     font-size: 22px;
     font-weight: bold;
+    text-align: center;
     margin-bottom: 30px;
   }
   .nav {
     list-style: none;
     padding: 0;
+    flex-grow: 1;
   }
   .nav li {
     margin: 10px 0;
@@ -247,7 +343,7 @@
     align-items: center;
     padding: 12px;
     border-radius: 5px;
-    transition: 0.3s;
+    transition: background 0.3s;
   }
   .nav a i {
     margin-right: 10px;
@@ -257,98 +353,66 @@
   .nav a.active {
     background: rgba(255, 255, 255, 0.2);
   }
+  .logout {
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+  }
+  .logout:hover {
+    background: #c0392b;
+  }
   .content {
     flex-grow: 1;
-    padding: 40px;
+    padding: 30px;
+    overflow-y: auto;
   }
   .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 20px;
   }
   .header h3 {
     color: #2c3e50;
   }
-  .table-container {
+  .card {
     background: white;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
-  .user-table {
-    width: 100%;
-    border-collapse: collapse;
+  .card h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
   }
-  .user-table th,
-  .user-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+  .summary p {
+    margin: 5px 0;
   }
-  .user-table th {
+  .accordion-button {
+    background: #007bff;
+    color: white;
+  }
+  .accordion-button:not(.collapsed) {
+    background: #0056b3;
+  }
+  .table {
+    margin-top: 10px;
+  }
+  .table th {
     background: #2c3e50;
     color: white;
   }
-  .text-success {
-    color: #28a745;
+  .table-sm th,
+  .table-sm td {
+    padding: 6px;
   }
-  .text-danger {
-    color: #dc3545;
+  .accordion-toggle {
+    cursor: pointer;
   }
   .btn {
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-size: 14px;
+    padding: 8px 16px;
   }
-  .btn-primary {
-    background: #007bff;
-    border: none;
-  }
-  .btn-danger {
-    background: #dc3545;
-    border: none;
-  }
-  .btn-sm {
-    padding: 5px 10px;
-    font-size: 12px;
-  }
-
-  .pagination {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-  margin-top: 20px;
-}
-
-.pagination .btn {
-  padding: 5px 10px;
-  border-radius: 5px;
-  text-decoration: none;
-}
-
-.pagination .btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-
-.pagination .btn-outline-primary {
-  border: 1px solid #007bff;
-  color: #007bff;
-}
-.sidebar .logout {
-        margin-top: auto; /* This will push the logout button to the bottom */
-        background: #e74c3c; /* Optional: Customize the background color */
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: 0.3s;
-      }
-
-      .sidebar .logout:hover {
-        background: #c0392b; /* Optional: Darken on hover */
-      }
 </style>

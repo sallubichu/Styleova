@@ -10,37 +10,26 @@
       <li><a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a></li>
       <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
       <li><a href="/admin/manageOrders" class="active"><i class="bi bi-cart-check"></i> Orders</a></li>
-      <li>
-        <a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a>
-      </li>
-      <li>
-        <a href="/admin/salesManagement" class="active"
-          ><i class="bi bi-bar-chart-line"></i> Sales Report</a
-        >
-      </li>
-      <li>
-        <a href="/admin/getCoupons" class="active"
-          ><i class="bi bi-ticket-perforated"></i> Coupons</a
-        >
-      </li>
+      <li><a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a></li>
+      <li><a href="/admin/salesManagement"><i class="bi bi-bar-chart-line"></i> Sales Report</a></li>
+      <li><a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> Coupons</a></li>
     </ul>
     <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-
   </aside>
 
   <!-- Main Content -->
   <main class="content">
     <div class="header d-flex justify-content-between align-items-center">
       <h3>Manage Orders</h3>
-      <nav aria-label="Page navigation">
-        <ul class="pagination">
-          <% for (let i = 1; i <= totalPages; i++) { %>
-            <li class="page-item <%= i === page ? 'active' : '' %>">
-              <a class="page-link" href="/admin/manageOrdersPagination/<%= i %>"><%= i %></a>
-            </li>
-          <% } %>
-        </ul>
-      </nav>
+      <!-- Items Per Page Selector -->
+      <div class="mb-3">
+        <label for="limitSelect">Items per page:</label>
+        <select id="limitSelect" class="form-select d-inline-block w-auto" onchange="window.location.href='/admin/manageOrders?page=1&limit='+this.value">
+          <option value="5" <%= limit === 5 ? 'selected' : '' %>>5</option>
+          <option value="10" <%= limit === 10 ? 'selected' : '' %>>10</option>
+          <option value="20" <%= limit === 20 ? 'selected' : '' %>>20</option>
+        </select>
+      </div>
     </div>
 
     <!-- Orders Table -->
@@ -58,42 +47,83 @@
           </tr>
         </thead>
         <tbody>
-          <% data.forEach(order => { %>
+          <% if (!data || data.length === 0) { %>
             <tr>
-              <td><%= order.name %></td>
-              <td><%= new Date(order.orderedDate).toLocaleString() %></td>
-              <td>
-                <% if (order.status === "Pending") { %>
-                  <span class="text-warning">Pending</span>
-                <% } else if (order.status === "Shipped") { %>
-                  <span class="text-info">Shipped</span>
-                <% } else if (order.status === "Delivered") { %>
-                  <span class="text-success">Delivered</span>
-                <% } %>
-              </td>
-              <td><%= order.paymentMethod %></td>
-              <td><%= order.paymentStatus %></td>
-              <td><%= order.totalAmount %></td>
-              <td>
-                <% if (order.status === 'Pending') { %>
-                  <button class="btn btn-primary btn-sm update-status" data-id="<%= order._id %>" data-status="Shipped">Mark as Shipped</button>
-                  <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
-                <% } else if (order.status === 'Shipped') { %>
-                  <button class="btn btn-success btn-sm update-status" data-id="<%= order._id %>" data-status="Delivered">Mark as Delivered</button>
-                  <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
-                <% } %>
-              </td>
+              <td colspan="7" class="text-center">No orders available.</td>
             </tr>
-          <% }) %>
+          <% } else { %>
+            <% data.forEach(order => { %>
+              <tr>
+                <td><%= order.name %></td>
+                <td><%= new Date(order.orderedDate).toLocaleString() %></td>
+                <td>
+                  <% if (order.status === "Pending") { %>
+                    <span class="text-warning">Pending</span>
+                  <% } else if (order.status === "Shipped") { %>
+                    <span class="text-info">Shipped</span>
+                  <% } else if (order.status === "Delivered") { %>
+                    <span class="text-success">Delivered</span>
+                  <% } else if (order.status === "Returned") { %>
+                    <span class="text-danger">Returned</span>
+                  <% } %>
+                  <% if (order.orderedItems.some(item => item.returnRequested)) { %>
+                    <span class="text-warning"> (Return Requested)</span>
+                  <% } %>
+                </td>
+                <td><%= order.paymentMethod %></td>
+                <td><%= order.paymentStatus %></td>
+                <td><%= order.totalAmount %></td>
+                <td>
+                  <% if (order.status === 'Pending') { %>
+                    <button class="btn btn-primary btn-sm update-status" data-id="<%= order._id %>" data-status="Shipped">Mark as Shipped</button>
+                    <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
+                  <% } else if (order.status === 'Shipped') { %>
+                    <button class="btn btn-success btn-sm update-status" data-id="<%= order._id %>" data-status="Delivered">Mark as Delivered</button>
+                    <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
+                  <% } else if (order.status === 'Delivered' && order.orderedItems.some(item => item.returnRequested)) { %>
+                    <button class="btn btn-warning btn-sm manage-return" data-id="<%= order._id %>">Manage Return</button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
         </tbody>
       </table>
+
+      <!-- Pagination Controls -->
+      <div class="pagination mt-4 d-flex justify-content-center align-items-center">
+        <!-- Previous Button -->
+        <% if (page > 1) { %>
+          <a href="/admin/manageOrders?page=<%= page - 1 %>&limit=<%= limit %>" class="btn btn-sm btn-secondary mx-1">Previous</a>
+        <% } else { %>
+          <button class="btn btn-sm btn-secondary mx-1" disabled>Previous</button>
+        <% } %>
+
+        <!-- Page Numbers -->
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <% if (i === page) { %>
+            <span class="btn btn-sm btn-primary mx-1"><%= i %></span>
+          <% } else { %>
+            <a href="/admin/manageOrders?page=<%= i %>&limit=<%= limit %>" class="btn btn-sm btn-outline-primary mx-1"><%= i %></a>
+          <% } %>
+        <% } %>
+
+        <!-- Next Button -->
+        <% if (page < totalPages) { %>
+          <a href="/admin/manageOrders?page=<%= page + 1 %>&limit=<%= limit %>" class="btn btn-sm btn-secondary mx-1">Next</a>
+        <% } else { %>
+          <button class="btn btn-sm btn-secondary mx-1" disabled>Next</button>
+        <% } %>
+      </div>
     </div>
   </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // Update Order Status
     document.querySelectorAll('.update-status').forEach(button => {
       button.addEventListener('click', async (e) => {
         const orderId = e.target.getAttribute('data-id');
@@ -102,9 +132,7 @@
         try {
           const response = await fetch(`/admin/toggleOrderStatus/${orderId}`, {
             method: "PATCH",
-            headers: {
-              "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: newStatus }),
           });
 
@@ -123,7 +151,7 @@
             Swal.fire({
               icon: 'error',
               title: 'Update Failed',
-              text: data.message || 'Failed to update order status. Please try again.',
+              text: data.message || 'Failed to update order status.',
               confirmButtonText: 'OK'
             });
           }
@@ -137,63 +165,126 @@
         }
       });
     });
-  });
 
-  document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.cancel-order').forEach(button => {
-    button.addEventListener('click', async (e) => {
-      const orderId = e.target.getAttribute('data-id');
+    // Cancel Order
+    document.querySelectorAll('.cancel-order').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-id');
 
-      Swal.fire({
-        title: 'Are you sure?',
-        text: "You are about to cancel this order!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Yes, cancel it!'
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            const response = await fetch(`/admin/cancelOrder/${orderId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "Cancelled" })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-              Swal.fire({
-                icon: 'success',
-                title: 'Order Cancelled',
-                text: 'The order has been successfully cancelled.',
-                confirmButtonText: 'OK'
-              }).then(() => {
-                window.location.reload();
+        Swal.fire({
+          title: 'Are you sure?',
+          text: "You are about to cancel this order!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, cancel it!'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(`/admin/cancelOrder/${orderId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "Cancelled" })
               });
-            } else {
+
+              const data = await response.json();
+
+              if (response.ok) {
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Order Cancelled',
+                  text: 'The order has been successfully cancelled.',
+                  confirmButtonText: 'OK'
+                }).then(() => {
+                  window.location.reload();
+                });
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Cancellation Failed',
+                  text: data.message || 'Failed to cancel the order.',
+                  confirmButtonText: 'OK'
+                });
+              }
+            } catch (error) {
               Swal.fire({
                 icon: 'error',
-                title: 'Cancellation Failed',
-                text: data.message || 'Failed to cancel the order. Please try again.',
+                title: 'Error',
+                text: 'An error occurred. Please try again later.',
                 confirmButtonText: 'OK'
               });
             }
-          } catch (error) {
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'An error occurred. Please try again later.',
-              confirmButtonText: 'OK'
-            });
           }
+        });
+      });
+    });
+
+    // Manage Return Requests
+    document.querySelectorAll('.manage-return').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-id');
+
+        // Fetch order details to show return requests
+        const response = await fetch(`/admin/getOrderDetails/${orderId}`);
+        const order = await response.json();
+
+        if (!response.ok || !order.success) {
+          Swal.fire('Error', order.message || 'Failed to load order details', 'error');
+          return;
         }
+
+        const returnItems = order.data.orderedItems.filter(item => item.returnRequested);
+        if (returnItems.length === 0) {
+          Swal.fire('Info', 'No return requests pending for this order', 'info');
+          return;
+        }
+
+        let html = '<ul>';
+        returnItems.forEach(item => {
+          html += `<li>Product: ${item.productId.name}, Size: ${item.size}, Reason: ${item.returnReason || 'None'}</li>`;
+        });
+        html += '</ul>';
+
+        Swal.fire({
+          title: 'Manage Return Requests',
+          html: `Items requested for return:<br>${html}`,
+          showDenyButton: true,
+          showCancelButton: true,
+          confirmButtonText: 'Approve',
+          denyButtonText: 'Reject',
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            // Approve return
+            const res = await fetch(`/admin/approveReturn/${orderId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'approve' }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              Swal.fire('Approved', 'Return has been approved and processed.', 'success').then(() => location.reload());
+            } else {
+              Swal.fire('Error', data.message || 'Failed to approve return', 'error');
+            }
+          } else if (result.isDenied) {
+            // Reject return
+            const res = await fetch(`/admin/approveReturn/${orderId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'reject' }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              Swal.fire('Rejected', 'Return request has been rejected.', 'success').then(() => location.reload());
+            } else {
+              Swal.fire('Error', data.message || 'Failed to reject return', 'error');
+            }
+          }
+        });
       });
     });
   });
-});
-
 </script>
 
 <%- include('../partials/footer') %>
@@ -201,22 +292,20 @@
 <!-- Custom Styles -->
 <style>
   .sidebar .logout {
-  margin-top: auto;  /* This will push the logout button to the bottom */
-  background: #e74c3c; /* Optional: Customize the background color */
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
-}
-
-.sidebar .logout:hover {
-  background: #c0392b; /* Optional: Darken on hover */
-}
-
+    margin-top: auto;
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+  }
+  .sidebar .logout:hover {
+    background: #c0392b;
+  }
   .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
   .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
   .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
@@ -228,10 +317,16 @@
   .content { flex-grow: 1; padding: 40px; }
   .header { display: flex; justify-content: space-between; align-items: center; }
   .header h3 { color: #2c3e50; }
-  .pagination { margin: 0; }
   .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); }
   .user-table { width: 100%; border-collapse: collapse; }
   .user-table th, .user-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
   .user-table th { background: #2c3e50; color: white; }
-  .status { font-weight: bold; }
+  .pagination { margin-top: 20px; }
+  .pagination .btn { min-width: 40px; text-align: center; }
+  .pagination .btn-primary { background-color: #2c3e50; border-color: #2c3e50; }
+  .pagination .btn-outline-primary { color: #2c3e50; border-color: #2c3e50; }
+  .pagination .btn-outline-primary:hover { background-color: #2c3e50; color: white; }
+  .pagination .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .form-select { padding: 5px 10px; }
+  .text-center { text-align: center; }
 </style>

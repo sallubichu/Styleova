@@ -10,30 +10,29 @@
       <li><a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a></li>
       <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
       <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
-      <li>
-        <a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a>
-      </li>
-      <li>
-        <a href="/admin/salesManagement" class="active"
-          ><i class="bi bi-bar-chart-line"></i> Sales Report</a
-        >
-      </li>
-      <li>
-        <a href="/admin/getCoupons" class="active"
-          ><i class="bi bi-ticket-perforated"></i> Coupons</a
-        >
-      </li>
-    
-      
+      <li><a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a></li>
+      <li><a href="/admin/salesManagement"><i class="bi bi-bar-chart-line"></i> Sales Report</a></li>
+      <li><a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> Coupons</a></li>
     </ul>
     <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
   </aside>
 
   <!-- Main Content -->
   <main class="content">
-    <div class="header">
+    <div class="header d-flex justify-content-between align-items-center">
       <h2>Category Management</h2>
-      <a class="btn btn-secondary add-category-btn" href="/admin/addcategory">Add Category</a>
+      <div class="d-flex align-items-center">
+        <a class="btn btn-secondary add-category-btn me-3" href="/admin/addcategory">Add Category</a>
+        <!-- Items Per Page Selector -->
+        <div class="mb-3">
+          <label for="limitSelect">Items per page:</label>
+          <select id="limitSelect" class="form-select d-inline-block w-auto" onchange="window.location.href='/admin/category?page=1&limit='+this.value">
+            <option value="5" <%= limit === 5 ? 'selected' : '' %>>5</option>
+            <option value="10" <%= limit === 10 ? 'selected' : '' %>>10</option>
+            <option value="20" <%= limit === 20 ? 'selected' : '' %>>20</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- Category Table -->
@@ -48,25 +47,59 @@
           </tr>
         </thead>
         <tbody>
-          <% data.forEach(category => { %>
+          <% if (!data || data.length === 0) { %>
             <tr>
-              <td><%= category.name %></td>
-              <td><%= category.description %></td>
-              <td>
-                <% if (category.listing) { %>
-                  <button class="btn btn-success toggle-btn" data-id="<%= category._id %>">Active</button>
-                <% } else { %>
-                  <button class="btn btn-danger toggle-btn" data-id="<%= category._id %>">Inactive</button>
-                <% } %>
-              </td>
-              <td>
-                <a href="/admin/editCategory/<%= category._id %>" class="btn btn-primary"><i class="fas fa-pencil-alt"></i></a>
-                <button class="btn btn-danger delete-btn" data-id="<%= category._id %>"><i class="fas fa-trash-alt"></i></button>
-              </td>
+              <td colspan="4" class="text-center">No categories available.</td>
             </tr>
-          <% }) %>
+          <% } else { %>
+            <% data.forEach(category => { %>
+              <tr>
+                <td><%= category.name %></td>
+                <td><%= category.description %></td>
+                <td>
+                  <% if (category.listing) { %>
+                    <button class="btn btn-success toggle-btn" data-id="<%= category._id %>">Active</button>
+                  <% } else { %>
+                    <button class="btn btn-danger toggle-btn" data-id="<%= category._id %>">Inactive</button>
+                  <% } %>
+                </td>
+                <td>
+                  <a href="/admin/editCategory/<%= category._id %>" class="btn btn-primary"><i class="fas fa-pencil-alt"></i></a>
+                  <button class="btn btn-danger delete-btn" data-id="<%= category._id %>"><i class="fas fa-trash-alt"></i></button>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
         </tbody>
       </table>
+
+      <!-- Pagination Controls -->
+      <div class="pagination mt-4 d-flex justify-content-center align-items-center">
+        <% if (totalPages > 1) { %>
+          <!-- Previous Button -->
+          <% if (page > 1) { %>
+            <a href="/admin/category?page=<%= page - 1 %>&limit=<%= limit %>" class="btn btn-sm btn-secondary mx-1">Previous</a>
+          <% } else { %>
+            <button class="btn btn-sm btn-secondary mx-1" disabled>Previous</button>
+          <% } %>
+
+          <!-- Page Numbers -->
+          <% for (let i = 1; i <= totalPages; i++) { %>
+            <% if (i === page) { %>
+              <span class="btn btn-sm btn-primary mx-1"><%= i %></span>
+            <% } else { %>
+              <a href="/admin/category?page=<%= i %>&limit=<%= limit %>" class="btn btn-sm btn-outline-primary mx-1"><%= i %></a>
+            <% } %>
+          <% } %>
+
+          <!-- Next Button -->
+          <% if (page < totalPages) { %>
+            <a href="/admin/category?page=<%= page + 1 %>&limit=<%= limit %>" class="btn btn-sm btn-secondary mx-1">Next</a>
+          <% } else { %>
+            <button class="btn btn-sm btn-secondary mx-1" disabled>Next</button>
+          <% } %>
+        <% } %>
+      </div>
     </div>
   </main>
 </div>
@@ -144,22 +177,20 @@
 <!-- Custom Styles -->
 <style>
   .sidebar .logout {
-  margin-top: auto;  /* This will push the logout button to the bottom */
-  background: #e74c3c; /* Optional: Customize the background color */
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
-}
-
-.sidebar .logout:hover {
-  background: #c0392b; /* Optional: Darken on hover */
-}
-
+    margin-top: auto;
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+  }
+  .sidebar .logout:hover {
+    background: #c0392b;
+  }
   .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
   .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
   .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
@@ -172,19 +203,16 @@
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .header h2 { color: #2c3e50; }
   .add-category-btn { background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; }
-  .alert { padding: 12px; border-radius: 5px; margin-bottom: 20px; display: flex; align-items: center; }
-  .alert.success { background: #28a745; color: white; }
-  .alert.error { background: #dc3545; color: white; }
   .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); }
   .category-table { width: 100%; border-collapse: collapse; }
   .category-table th, .category-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
   .category-table th { background: #2c3e50; color: white; }
-  .status.active { color: green; font-weight: bold; }
-  .status.blocked { color: red; font-weight: bold; }
-  .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: 0.4s; border-radius: 20px; }
-  .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; transition: 0.4s; border-radius: 50%; }
-  input:checked + .slider { background: #28a745; }
-  input:checked + .slider:before { transform: translateX(14px); }
+  .pagination { margin-top: 20px; }
+  .pagination .btn { min-width: 40px; text-align: center; }
+  .pagination .btn-primary { background-color: #2c3e50; border-color: #2c3e50; }
+  .pagination .btn-outline-primary { color: #2c3e50; border-color: #2c3e50; }
+  .pagination .btn-outline-primary:hover { background-color: #2c3e50; color: white; }
+  .pagination .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .form-select { padding: 5px 10px; }
+  .text-center { text-align: center; }
 </style>

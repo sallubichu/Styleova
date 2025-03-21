@@ -21,18 +21,21 @@ const orderSchema = new mongoose.Schema(
         originalPrice: Number,
         price: Number,
         quantity: Number,
-        size: { type: String, required: true }, // ✅ Added size field
+        size: { type: String, required: true },
         offerDiscount: { type: Number, default: 0 },
-        status:{
-                type: String,
-      default: "Pending",
-      enum: ["Pending", "Delivered", "Cancelled","Returned"],
+        status: {
+          type: String,
+          default: "Pending",
+          enum: ["Pending", "Delivered", "Cancelled", "Returned","Return Requested"],
         },
+        returned:{type:Boolean,default:false},
+        returnRequested: { type: Boolean, default: false },
+        returnReason: { type: String }
       },
     ],
     orderedDate: {
       type: Date,
-      default: Date.now, 
+      default: Date.now,
     },
     deliveredDate: {
       type: Date,
@@ -40,7 +43,7 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Pending",
-      enum: ["Pending", "Delivered", "Cancelled","Returned"],
+      enum: ["Pending", "Delivered", "Cancelled", "Returned"],
     },
     shippingAddress: {
       type: mongoose.Schema.Types.ObjectId,
@@ -57,6 +60,7 @@ const orderSchema = new mongoose.Schema(
       enum: ["Pending", "Completed", "Failed", "Refunded"],
       required: true,
     },
+    paymentId: { type: String, default: null }, // Stores Razorpay payment ID
     totalAmount: {
       type: Number,
       required: true,

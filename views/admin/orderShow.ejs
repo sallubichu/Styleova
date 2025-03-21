@@ -1,0 +1,371 @@
+<%- include('../partials/adminHeader') %>
+
+<div class="admin-container">
+  <aside class="sidebar">
+    <h3 class="logo">Admin Panel</h3>
+    <ul class="nav">
+      <li><a href="/admin/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="/admin/category"><i class="bi bi-tags"></i> Categories</a></li>
+      <li><a href="/admin/products"><i class="bi bi-box-seam"></i> Products</a></li>
+      <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
+      <li><a href="/admin/manageOrders" class="active"><i class="bi bi-cart-check"></i> Orders</a></li>
+      <li><a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a></li>
+      <li><a href="/admin/salesManagement"><i class="bi bi-bar-chart-line"></i> Sales Report</a></li>
+      <li><a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> Coupons</a></li>
+      <li><a href="/admin/wallets"><i class="bi bi-wallet2"></i> Wallet Management</a></li>
+    </ul>
+    <a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+  </aside>
+
+  <main class="content">
+    <div class="header d-flex justify-content-between align-items-center">
+      <h3>Order Details - #<%= order._id %></h3>
+      <a href="/admin/manageOrders" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to Orders</a>
+    </div>
+
+    <div class="table-container">
+      <div class="order-details">
+        <p><strong>Recipient Name:</strong> <%= order.name %></p>
+        <p><strong>Ordered Date:</strong> <%= new Date(order.orderedDate).toLocaleString() %></p>
+        <p><strong>Status:</strong> 
+          <% if (order.status === "Pending") { %>
+            <span class="text-warning"><%= order.status %></span>
+          <% } else if (order.status === "Shipped") { %>
+            <span class="text-info"><%= order.status %></span>
+          <% } else if (order.status === "Delivered") { %>
+            <span class="text-success"><%= order.status %></span>
+          <% } else if (order.status === "Cancelled") { %>
+            <span class="text-danger"><%= order.status %></span>
+          <% } else if (order.status === "Returned") { %>
+            <span class="text-danger"><%= order.status %></span>
+          <% } %>
+        </p>
+        <p><strong>Payment Method:</strong> <%= order.paymentMethod %></p>
+        <p><strong>Payment Status:</strong> <%= order.paymentStatus %></p>
+
+        <!-- Order Summary -->
+        <% 
+          const subtotal = order.orderedItems.reduce((sum, item) => sum + ((item.originalPrice || item.price) * item.quantity), 0);
+          let couponDiscount = 0;
+          
+          if (order.couponApplied) {
+            if (order.couponApplied.discountType === 'Fixed') {
+              couponDiscount = order.couponApplied.discountValue;
+            } else if (order.couponApplied.discountType === 'Percentage') {
+              const calculatedDiscount = (subtotal * order.couponApplied.discountValue) / 100;
+              couponDiscount = Math.min(calculatedDiscount, order.couponApplied.maxDiscountAmount || calculatedDiscount);
+            }
+          }
+          
+          const finalTotal = subtotal - couponDiscount;
+        %>
+        <p><strong>Original Amount:</strong> <%= subtotal.toFixed(2) %></p>
+        <p><strong>Total Amount:</strong> <%= finalTotal.toFixed(2) %></p>
+        <% if (order.couponApplied && couponDiscount > 0) { %>
+          <p><strong>Coupon Code:</strong> <%= order.couponApplied.code %></p>
+          <p><strong>Discount Amount:</strong> <span class="text-success"><%= couponDiscount.toFixed(2) %>
+            <% if (order.couponApplied.discountType === 'Percentage') { %>
+              (<%= order.couponApplied.discountValue %>% off, max <%= order.couponApplied.maxDiscountAmount.toFixed(2) %>)
+            <% } else { %>
+              (Fixed)
+            <% } %>
+          </span></p>
+        <% } %>
+
+        <!-- Order Items -->
+        <h4>Items</h4>
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Quantity</th>
+              <th>Original Price</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Return Request</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% order.orderedItems.forEach(item => { %>
+              <tr>
+                <td><%= item.pname %></td>
+                <td><%= item.quantity %></td>
+                <td><%= (item.originalPrice || item.price).toFixed(2) %></td>
+                <td><%= ((item.originalPrice || item.price) * item.quantity).toFixed(2) %></td>
+                <td>
+                  <% if (item.status === "Pending") { %>
+                    <span class="text-warning"><%= item.status %></span>
+                  <% } else if (item.status === "Shipped") { %>
+                    <span class="text-info"><%= item.status %></span>
+                  <% } else if (item.status === "Delivered") { %>
+                    <span class="text-success"><%= item.status %></span>
+                  <% } else if (item.status === "Cancelled") { %>
+                    <span class="text-danger"><%= item.status %></span>
+                  <% } else if (item.status === "Returned") { %>
+                    <span class="text-danger"><%= item.status %></span>
+                  <% } else if (item.status === "Return Requested") { %>
+                    <span class="text-warning"><%= item.status %></span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (item.returnRequested && !item.returned) { %>
+                    Requested (Reason: <%= item.returnReason || 'None' %>)
+                  <% } else if (item.returned) { %>
+                    Returned
+                  <% } else { %>
+                    None
+                  <% } %>
+                </td>
+                <td>
+                  <% if (item.returnRequested && !item.returned) { %>
+                    <button class="btn btn-success btn-sm approve-return" 
+                            data-order-id="<%= order._id %>" 
+                            data-product-id="<%= item.productId._id || item.productId %>" 
+                            data-size="<%= item.size %>">
+                      Approve
+                    </button>
+                    <button class="btn btn-danger btn-sm reject-return" 
+                            data-order-id="<%= order._id %>" 
+                            data-product-id="<%= item.productId._id || item.productId %>" 
+                            data-size="<%= item.size %>">
+                      Reject
+                    </button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+
+        <!-- Actions -->
+        <div class="mt-3">
+          <% if (order.status === 'Pending') { %>
+            <button class="btn btn-primary btn-sm update-status" data-id="<%= order._id %>" data-status="Shipped">Mark as Shipped</button>
+            <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
+          <% } else if (order.status === 'Shipped') { %>
+            <button class="btn btn-success btn-sm update-status" data-id="<%= order._id %>" data-status="Delivered">Mark as Delivered</button>
+            <button class="btn btn-danger btn-sm cancel-order" data-id="<%= order._id %>">Cancel Order</button>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Update Order Status
+    document.querySelectorAll('.update-status').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-id');
+        const newStatus = e.target.getAttribute('data-status');
+        
+        try {
+          const response = await fetch(`/admin/toggleOrderStatus/${orderId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Order Status Updated',
+              text: `Order status has been updated to ${newStatus}.`,
+              confirmButtonText: 'OK'
+            }).then(() => {
+              window.location.reload();
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Update Failed',
+              text: data.message || 'Failed to update order status.',
+              confirmButtonText: 'OK'
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred. Please try again later.',
+            confirmButtonText: 'OK'
+          });
+        }
+      });
+    });
+
+    // Cancel Order
+    document.querySelectorAll('.cancel-order').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-id');
+
+        Swal.fire({
+          title: 'Are you sure?',
+          text: "You are about to cancel this order!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, cancel it!'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(`/admin/cancelOrder/${orderId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "Cancelled" })
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Order Cancelled',
+                  text: 'The order has been successfully cancelled.',
+                  confirmButtonText: 'OK'
+                }).then(() => {
+                  window.location.reload();
+                });
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Cancellation Failed',
+                  text: data.message || 'Failed to cancel the order.',
+                  confirmButtonText: 'OK'
+                });
+              }
+            } catch (error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred. Please try again later.',
+                confirmButtonText: 'OK'
+              });
+            }
+          }
+        });
+      });
+    });
+
+    // Approve Return
+    document.querySelectorAll('.approve-return').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-order-id');
+        const productId = e.target.getAttribute('data-product-id');
+        const size = e.target.getAttribute('data-size');
+
+        Swal.fire({
+          title: 'Approve Return?',
+          text: 'Are you sure you want to approve this return request?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#28a745',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, approve it!'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(`/admin/approveReturn/${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId, size, action: 'approve' }),
+              });
+              const data = await response.json();
+
+              if (data.success) {
+                Swal.fire('Approved', 'Return has been approved and processed.', 'success').then(() => {
+                  window.location.reload();
+                });
+              } else {
+                Swal.fire('Error', data.message || 'Failed to approve return.', 'error');
+              }
+            } catch (error) {
+              Swal.fire('Error', 'An error occurred. Please try again later.', 'error');
+            }
+          }
+        });
+      });
+    });
+
+    // Reject Return
+    document.querySelectorAll('.reject-return').forEach(button => {
+      button.addEventListener('click', async (e) => {
+        const orderId = e.target.getAttribute('data-order-id');
+        const productId = e.target.getAttribute('data-product-id');
+        const size = e.target.getAttribute('data-size');
+
+        Swal.fire({
+          title: 'Reject Return?',
+          text: 'Are you sure you want to reject this return request?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, reject it!'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(`/admin/approveReturn/${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId, size, action: 'reject' }),
+              });
+              const data = await response.json();
+
+              if (data.success) {
+                Swal.fire('Rejected', 'Return request has been rejected.', 'success').then(() => {
+                  window.location.reload();
+                });
+              } else {
+                Swal.fire('Error', data.message || 'Failed to reject return.', 'error');
+              }
+            } catch (error) {
+              Swal.fire('Error', 'An error occurred. Please try again later.', 'error');
+            }
+          }
+        });
+      });
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>
+
+<style>
+  .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
+  .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
+  .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
+  .nav { list-style: none; padding: 0; }
+  .nav li { margin: 10px 0; }
+  .nav a { color: white; text-decoration: none; font-size: 16px; display: flex; align-items: center; padding: 12px; border-radius: 5px; transition: 0.3s; }
+  .nav a i { margin-right: 10px; font-size: 20px; }
+  .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
+  .content { flex-grow: 1; padding: 40px; }
+  .header { display: flex; justify-content: space-between; align-items: center; }
+  .header h3 { color: #2c3e50; }
+  .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); }
+  .order-details { font-size: 16px; }
+  .order-details p { margin: 10px 0; }
+  .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .user-table th, .user-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+  .user-table th { background: #2c3e50; color: white; }
+  .text-warning { color: #ffc107; }
+  .text-info { color: #17a2b8; }
+  .text-success { color: #28a745; }
+  .text-danger { color: #dc3545; }
+  .btn { padding: 8px 12px; border-radius: 5px; font-size: 14px; }
+  .btn-primary { background: #007bff; border: none; }
+  .btn-secondary { background: #6c757d; border: none; }
+  .btn-success { background: #28a745; border: none; }
+  .btn-danger { background: #dc3545; border: none; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .sidebar .logout { margin-top: auto; background: #e74c3c; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+  .sidebar .logout:hover { background: #c0392b; }
+</style>

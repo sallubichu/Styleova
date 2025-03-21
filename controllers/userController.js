@@ -14,6 +14,8 @@ const orderModel = require("../models/orderModel");
 const mongoose = require("mongoose");
 const walletHistoryModel = require("../models/wallethistoryModel");
 const OTP = require("../models/otpModel");
+const HttpStatus = require('../utils/httpStatus');
+const razorpayInstance = require("../config/razorpay");
 
 const JWT_SECRET_KEY = "your_jwt_secret";
 
@@ -222,29 +224,39 @@ exports.userLogin = async (req, res) => {
     if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "Email and Password are required" });
+        .json({ message: 'Email and password are required' });
     }
 
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.redirect("/user/login?msg=invalidcredentials");
+      return res.redirect('/user/login?msg=invalid+password+or+username');
     }
 
     // Check if the user is blocked
-    if (user.status === "blocked") {
-      return res.redirect("/user/login?msg=block");
+    if (user.status === 'blocked') {
+      return res.redirect('/user/login?msg=block');
     }
+
+    // Check if password field exists in the user object
+    if (!user.password) {
+      console.error('Password field is missing for user:', user);
+      return res.redirect('/user/login?msg=invalid+password+or+username');
+    }
+
+    // Debugging logs
+    console.log('Plaintext Password:', password);
+    console.log('Hashed Password:', user.password);
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.redirect("/user/login?msg=invalidcredentials");
+      return res.redirect('/user/login?msg=invalid+password+or+username');
     }
 
     // Generate JWT
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1h", // Token expires in 1 hour
+      expiresIn: '1h',
     });
 
     // Generate Refresh Token
@@ -252,37 +264,56 @@ exports.userLogin = async (req, res) => {
       { userId: user._id },
       process.env.REFRESH_SECRET_KEY,
       {
-        expiresIn: "7d", // Refresh token expires in 7 days
+        expiresIn: '7d',
       }
     );
 
-    // Set tokens in HTTP-only cookies
-    res.cookie("token", token, {
+    // Set tokens in cookies
+    res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Ensure cookies are only sent over HTTPS in production
-      sameSite: "strict",
-      maxAge: 3600000, // 1 hour
+      secure: process.env.NODE_ENV === 'production', // Secure in production
+      sameSite: 'strict',
+      maxAge: 3600000, // 1 hour in milliseconds
     });
 
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 604800000, // 7 days
+      secure: process.env.NODE_ENV === 'production', // Secure in production
+      sameSite: 'strict',
+      maxAge: 604800000, // 7 days in milliseconds
     });
 
-    // Redirect to the dashboard
-    return res.redirect("/user/dashboard");
+    // Fetch categories (if needed for the dashboard)
+    const categories = await Category.find();
+
+    // Redirect to the dashboard after successful login
+    return res.redirect('/user/dashboard');
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error('Login error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
+
+
 exports.showDashboard = async (req, res) => {
-  const user = req.user;
-  const category = await Category.find();
-  res.render("user/index", { user, category });
+  try {
+    const user = req.user; // From verifyUser middleware
+    console.log("Dashboard user:", user ? user.email : "No user found"); // Debug user
+
+    // Fetch only listed categories
+    const category = await Category.find({ listing: true });
+    console.log("Listed categories fetched:", category.length); // Debug number of listed categories
+
+    // Pass user as a boolean to match EJS expectation
+    res.render("user/index", {
+      user: !!user, // Convert to boolean: true if user exists, false otherwise
+      category, // Array of only listed categories
+    });
+  } catch (error) {
+    console.error("Error in showDashboard:", error);
+    res.redirect("/user/login?msg=dashboarderror"); // Graceful redirect on error
+  }
 };
 
 exports.productDetailed = async (req, res) => {
@@ -330,170 +361,253 @@ exports.forgot = async (req, res) => {
   }
 };
 
+
 exports.placeOrder = async (req, res) => {
   console.log("Received Request Body:", req.body);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     const user = req.user;
-    if (!user) {
-      return res.redirect("/?msg=nouser");
+    if (!user || !user._id) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        error: "User not authenticated",
+      });
     }
 
-    let {
-      couponId,
-      cartId,
-      paymentMethod,
-      paymentStatus,
-      shippingAddress,
-    } = req.body;
+    const { cartId, paymentMethod, paymentStatus, shippingAddress, finalAmount, razorpayPaymentId, initiateRazorpay } = req.body;
 
-    const authCouponId = couponId && couponId !== "null" ? couponId : null;
+    // Check for existing order unconditionally
+    const existingOrder = await orderModel.findOne({ cartId }).session(session);
+    if (existingOrder) {
+      console.log("Duplicate order detected for cartId:", cartId, "Existing order:", existingOrder._id);
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        error: "Order already exists for this cart",
+        existingOrderId: existingOrder._id,
+      });
+    }
 
-    // Fetch cart, address, and coupon in parallel
-    const [usercart, address, coupon] = await Promise.all([
-      cartModel
-        .findById(cartId)
-        .populate(
-          "products.productId",
-          "name images originalPrice rate discount stock"
-        ),
-      addressModel.findById(shippingAddress),
-      authCouponId
-        ? couponModel.findById(authCouponId)
-        : Promise.resolve(null),
+    const [cart, address] = await Promise.all([
+      cartModel.findById(cartId).populate("products.productId", "name images rate stock").session(session),
+      addressModel.findById(shippingAddress).session(session),
     ]);
 
-    if (!usercart || usercart.products.length === 0) {
-      return res.status(400).json({ error: "Cart is empty or invalid" });
+    if (!cart || !cart.products || cart.products.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        error: "Cart is empty or invalid",
+      });
     }
     if (!address) {
-      return res.status(400).json({ error: "Shipping address not found" });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        error: "Shipping address not found",
+      });
     }
 
-    // Map ordered items
-    const orderedItems = usercart.products.map((item) => ({
-      productId: item.productId._id,
-      pname: item.productId.name,
-      pimages: item.productId.images,
-      originalPrice: item.productId.originalPrice,
-      price: item.productId.rate,
-      quantity: item.quantity,
-      size: item.size,
-      offerDiscount: item.productId.discount || 0,
-    }));
+    // Calculate original total and discount
+    let originalTotal = 0;
+    cart.products.forEach((item) => (originalTotal += item.productId.rate * item.quantity));
+    
+    const discountAmount = parseFloat(cart.discountAmount) || 0;
+    const totalAmount = parseFloat(finalAmount) || (originalTotal - discountAmount);
+    const amountInPaise = Math.round(totalAmount * 100);
 
-    // Calculate total amount
-    let totalAmount = orderedItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    console.log("Original Total (INR):", originalTotal);
+    console.log("Discount Amount (INR):", discountAmount);
+    console.log("Amount Paid (INR):", totalAmount);
 
-    // Apply coupon discount if applicable
-    if (coupon && coupon.isActive) {
-      const discount = Math.round(
-        (totalAmount * coupon.discountPercentage) / 100
-      );
-      totalAmount -= discount; // Update totalAmount with the discounted amount
-    }
-
-    // Check stock availability for each item
-    const productIds = orderedItems.map((item) => item.productId);
-    const products = await Product.find({ _id: { $in: productIds } });
-
-    for (let item of orderedItems) {
-      const product = products.find(
-        (p) => p._id.toString() === item.productId.toString()
-      );
-      if (!product) {
-        return res
-          .status(400)
-          .json({ error: `Product not found: ${item.pname}` });
+    // Distribute discount across items proportionally
+    const orderedItems = cart.products.map((item) => {
+      const itemTotal = item.productId.rate * item.quantity;
+      let offerDiscount = 0;
+      if (discountAmount > 0 && originalTotal > 0) {
+        offerDiscount = Math.round((itemTotal / originalTotal) * discountAmount);
       }
-      if (
-        !product.stock ||
-        !product.stock[item.size] ||
-        product.stock[item.size] < item.quantity
-      ) {
-        return res.status(400).json({
+      return {
+        productId: item.productId._id,
+        pname: item.productId.name,
+        pimages: item.productId.images,
+        originalPrice: item.productId.rate,
+        price: item.productId.rate,
+        quantity: item.quantity,
+        size: item.size,
+        offerDiscount: offerDiscount,
+        status: "Pending",
+      };
+    });
+
+    // Verify stock availability
+    const productIds = orderedItems.map((item) => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } }).session(session);
+
+    for (const item of orderedItems) {
+      const product = products.find((p) => p._id.toString() === item.productId.toString());
+      if (!product || !product.stock[item.size] || product.stock[item.size] < item.quantity) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
           error: `Insufficient stock for ${item.pname} (${item.size})`,
         });
       }
     }
 
-    // Handle wallet payment
-    if (paymentMethod === "Styleova Wallet") {
-      const userWallet = await User.findById(user._id).select("wallet");
+    let resolvedPaymentStatus = paymentStatus || "Pending";
+    let paymentId = null;
+    let updatedUser = null;
 
-      // Use the discounted totalAmount for wallet payment
-      if (userWallet.wallet < totalAmount) {
-        return res.status(400).json({ error: "Insufficient wallet balance" });
+    if (paymentMethod.toLowerCase().replace(/\s+/g, "") === "razorpay") {
+      if (initiateRazorpay) {
+        const razorpayOrder = await razorpayInstance.orders.create({
+          amount: amountInPaise,
+          currency: "INR",
+          receipt: `order_${cartId}`,
+        });
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(HttpStatus.OK).json({
+          success: true,
+          razorpayOrderId: razorpayOrder.id,
+          message: "Razorpay order initiated",
+        });
+      } else if (razorpayPaymentId) {
+        const payment = await razorpayInstance.payments.fetch(razorpayPaymentId);
+        console.log("Razorpay payment details:", payment);
+        if (payment.status === "captured" && payment.amount === amountInPaise) {
+          resolvedPaymentStatus = "Completed";
+          paymentId = razorpayPaymentId;
+        } else {
+          resolvedPaymentStatus = "Failed";
+          paymentId = razorpayPaymentId;
+        }
+      } else if (paymentStatus === "Failed") {
+        resolvedPaymentStatus = "Failed";
+        paymentId = null;
+      } else {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          error: "Missing Razorpay payment ID or invalid payment status",
+        });
+      }
+    } else if (paymentMethod === "Styleova Wallet") {
+      const userWallet = await User.findById(user._id).select("wallet").session(session);
+      if (!userWallet || userWallet.wallet < totalAmount) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          error: "Insufficient wallet balance",
+        });
       }
 
-      // Deduct from wallet using the discounted totalAmount
-      const updatedUser = await User.findByIdAndUpdate(
+      updatedUser = await User.findByIdAndUpdate(
         user._id,
         { $inc: { wallet: -totalAmount } },
-        { new: true }
+        { new: true, session }
       );
+      resolvedPaymentStatus = "Completed";
+    } else if (paymentMethod.toLowerCase().replace(/\s+/g, "") === "cod") {
+      resolvedPaymentStatus = "Pending"; // COD remains pending until delivery
+    }
 
-      // Add wallet history entry
+    const order = new orderModel({
+      userId: user._id,
+      name: address.name,
+      orderedItems,
+      orderedDate: new Date(),
+      status: "Pending",
+      shippingAddress: address._id,
+      paymentMethod,
+      paymentStatus: resolvedPaymentStatus,
+      paymentId,
+      totalAmount,
+      couponApplied: {
+        code: cart.couponCode || "",
+        discount: discountAmount,
+      },
+      cartId, // Store cartId explicitly for reference
+    });
+
+    await order.save({ session });
+
+    if (paymentMethod === "Styleova Wallet" && updatedUser) {
       await walletHistoryModel.findOneAndUpdate(
         { userId: user._id },
         {
           $push: {
             history: {
               amount: totalAmount,
+              originalAmount: originalTotal,
+              discount: discountAmount,
               type: "debit",
               walletBalance: updatedUser.wallet,
-              date: new Date(),
+              dateCreated: new Date(),
               reason: "Order Payment",
+              orderId: order._id,
             },
           },
         },
-        { new: true, upsert: true }
-      );
-
-      paymentStatus = "Completed";
-    }
-
-    // Create and save the order
-    const order = new orderModel({
-      userId: user._id,
-      name: address.name,
-      orderedItems,
-      totalAmount, // Use the discounted totalAmount
-      shippingAddress: address._id,
-      paymentMethod,
-      paymentStatus,
-      couponApplied: authCouponId,
-      orderedDate: new Date(),
-    });
-
-    await order.save();
-
-    // Delete the cart after placing the order
-    await cartModel.findByIdAndDelete(cartId);
-
-    // Update stock quantity
-    for (let item of orderedItems) {
-      await Product.findByIdAndUpdate(
-        item.productId,
-        { $inc: { [`stock.${item.size}`]: -item.quantity } }
+        { new: true, upsert: true, session }
       );
     }
 
-    return res.render("user/orderPlaced", {
-      user: true,
-      paymentStatus,
-      orderId: order._id,
-      orderDate: order.orderedDate,
-      orderStatus: order.status,
+    // Delete cart regardless of payment status to prevent reuse
+    await cartModel.findByIdAndDelete(cartId, { session });
+
+    // Update stock only if payment is completed (not for COD or failed payments)
+    if (resolvedPaymentStatus === "Completed") {
+      for (const item of orderedItems) {
+        await Product.findByIdAndUpdate(
+          item.productId,
+          { $inc: { [`stock.${item.size}`]: -item.quantity } },
+          { session }
+        );
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    console.log("Order placed successfully:", order._id);
+    return res.status(HttpStatus.OK).json({
+      success: true,
+      message: resolvedPaymentStatus === "Failed" ? "Order created with payment failure" : "Order placed successfully",
+      order: {
+        orderId: order._id,
+        paymentStatus: order.paymentStatus,
+        orderDate: order.orderedDate,
+        orderStatus: order.status,
+        originalAmount: originalTotal,
+        discountAmount: discountAmount,
+        amountPaid: totalAmount,
+        paymentMethod: order.paymentMethod,
+      },
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error placing order:", error);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: "Something went wrong. Please try again.",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
+
 exports.forgotPassword = async (req, res) => {
   console.log("forgot triggered");
   const { email } = req.body;
@@ -612,39 +726,54 @@ exports.resetPassword = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
-    let user = req.user;
-    if (user) {
-      res.clearCookie("token");
-      res.redirect("/user/login?msg=loggedout");
-    } else {
-      res.redirect("/?msg=nouser");
-    }
+    res.clearCookie("token");
+    res.redirect("/user/login?msg=loggedout");
   } catch (e) {
     console.log(e);
     res.status(500).send("Error");
   }
 };
 
+
 exports.filterSort = async (req, res) => {
   try {
-    let user = req.user;
-    const popularProducts = await Product.find({ listing: true })
-      .sort({ rating: -1 })
-      .limit(4)
-      .populate("category");
-
+    const user = req.user;
     const {
-      search = "", // Default to an empty string if search is undefined
+      search = "", // Default to empty string if undefined
       sort = "objectId",
       filter = [],
       limit = 5,
     } = req.query;
     let { page = 1 } = req.query;
 
+    // Ensure filters is an array
     const filters = Array.isArray(filter) ? filter : filter ? [filter] : [];
 
-    const category = await Category.find({ listing: true });
+    // Fetch listed category IDs
+    const listedCategoryIds = await Category.find({ listing: true }).distinct('_id');
+    console.log("Listed category IDs:", listedCategoryIds.map(id => id.toString()));
 
+    // Fetch popular products from listed categories
+    const popularProducts = await Product.find({
+      listing: true,
+      category: { $in: listedCategoryIds },
+    })
+      .sort({ rating: -1 })
+      .limit(4)
+      .populate("category");
+    console.log("Popular products:", popularProducts.map(p => ({
+      name: p.name,
+      category: p.category.name,
+      categoryListing: p.category.listing,
+    })));
+
+    // Validate and filter category IDs from query
+    const validFilters = filters.filter(id => 
+      mongoose.Types.ObjectId.isValid(id) && listedCategoryIds.some(lid => lid.toString() === id)
+    );
+    console.log("Valid filters:", validFilters);
+
+    // Define sort options
     const sortOptions = {
       price_lowtohigh: { rate: 1 },
       price_hightolow: { rate: -1 },
@@ -652,122 +781,154 @@ exports.filterSort = async (req, res) => {
       name_hightolow: { name: -1 },
       objectId: { _id: -1 },
     };
-
     const sortCriteria = sortOptions[sort] || sortOptions.objectId;
 
+    // Build query for products
     const query = {
       name: { $regex: search, $options: "i" },
       listing: true,
+      category: { $in: listedCategoryIds }, // Restrict to listed categories
     };
-
-    if (filters.length > 0) {
-      query.category = { $in: filters };
+    if (validFilters.length > 0) {
+      query.category = { $in: validFilters }; // Override with user-selected filters
     }
 
+    // Pagination
     const total = await Product.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
-
     page = Math.max(1, Math.min(totalPages, parseInt(page)));
 
+    // Fetch products
     const products = await Product.find(query)
       .populate("category")
       .sort(sortCriteria)
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
+    console.log("Filtered products:", products.map(p => ({
+      name: p.name,
+      category: p.category.name,
+      categoryListing: p.category.listing,
+    })));
+
+    // Fetch all listed categories for UI
+    const category = await Category.find({ listing: true });
 
     res.render("user/products", {
       user,
       products,
       currentPage: parseInt(page),
       totalPages,
-      searchQuery: search || "", // Ensure searchQuery is always defined
-      selectedFilters: filters,
+      searchQuery: search || "",
+      selectedFilters: validFilters,
       selectedSort: sort,
       category,
       popularProducts,
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Error in filterSort:", error.message);
     res.status(500).send("An error occurred while processing your request.");
   }
 };
 
-exports.returnOrder=async (req, res) => {
+
+exports.renderOrderPlaced = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const order = await orderModel.findById(orderId)
+      .populate("orderedItems.productId")
+      .populate("shippingAddress");
+    if (!order || order.userId.toString() !== req.user._id.toString()) {
+      return res.status(HttpStatus.NOT_FOUND).render("error", { message: "Order not found" });
+    }
+    res.render("user/orderPlaced", {
+      user: true,
+      paymentStatus: order.paymentStatus,
+      orderId: order._id,
+      orderDate: order.orderedDate,
+      orderStatus: order.status,
+      totalAmount: order.totalAmount,
+      paymentMethod: order.paymentMethod,
+      shippingAddress: order.shippingAddress,
+      orderedItems: order.orderedItems,
+    });
+  } catch (error) {
+    console.error("Error rendering order placed page:", error);
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).render("error", { message: "Something went wrong" });
+  }
+};
+
+exports.requestReturn = async (req, res) => {
+    console.log('Return request triggered for orderId:', req.params.orderId);
     try {
-      console.log('return order triggered')
-        const orderId = req.params.orderId;
-console.log('order id',orderId)
+        const { orderId } = req.params;
+        const { productId, size, amount, returnReason } = req.body;
+        const user = req.user;
+
+        // Log incoming data for debugging
+        console.log('Request body:', { productId, size, amount, returnReason });
+        console.log('User ID:', user._id);
+
+        // Validate inputs
+        if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(productId)) {
+            console.log('Invalid ID format');
+            return res.status(400).json({ success: false, message: 'Invalid order or product ID' });
+        }
+
         // Find the order
         const order = await orderModel.findById(orderId);
         if (!order) {
+            console.log('Order not found');
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
-console.log('order is here',order)
-        // Check if the order is already returned
-        if (order.status === 'Returned') {
-            return res.status(400).json({ success: false, message: 'Order is already returned' });
+        if (order.userId.toString() !== user._id.toString()) {
+            console.log('Unauthorized user');
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
 
-        // Update order status and payment status
-        order.status = 'Returned';
-        order.paymentStatus = 'Refunded';
+        // Check order status
+        if (order.status !== 'Delivered') {
+            console.log('Order not delivered');
+            return res.status(400).json({ success: false, message: 'Only delivered orders can be returned' });
+        }
+
+        // Check return window (7 days)
+        const deliveredDate = order.deliveredDate || order.updatedAt;
+        const daysSinceDelivered = (new Date() - new Date(deliveredDate)) / (1000 * 60 * 60 * 24);
+        if (daysSinceDelivered > 7) {
+            console.log('Return period expired');
+            return res.status(400).json({ success: false, message: 'Return period (7 days) has expired' });
+        }
+
+        // Find the specific item in orderedItems
+        const itemIndex = order.orderedItems.findIndex(
+            item => item.productId.toString() === productId && item.size === size
+        );
+        if (itemIndex === -1) {
+            console.log('Item not found in order');
+            return res.status(404).json({ success: false, message: 'Item not found in order' });
+        }
+
+        const item = order.orderedItems[itemIndex];
+        if (item.returnRequested || item.returned) {
+            console.log('Return already requested or processed');
+            return res.status(400).json({ success: false, message: 'Return already requested or processed' });
+        }
+
+        // Update item status
+        item.returnRequested = true;
+        item.returnReason = returnReason || 'No reason provided';
+        item.status = 'Return Requested';
+
+        // Save the updated order
         await order.save();
+        console.log('Order updated successfully:', order._id);
 
-        // Restock the products with correct size
-        for (const item of order.orderedItems) {
-            const product = await Product.findById(item.productId);
-            if (product) {
-                const size = item.size; // Get the size of the returned product
-                if (product.stock[size] !== undefined) {
-                    product.stock[size] += item.quantity; // Increase the correct size stock
-                    await product.save();
-                }
-            }
-        }
-
-        res.status(200).json({ success: true, message: 'Order returned and refunded successfully' });
+        res.status(200).json({
+            success: true,
+            message: 'Return request submitted successfully. Awaiting admin approval.',
+        });
     } catch (error) {
-        console.error(error);
+        console.error('Error in requestReturn:', error.stack);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
-};
-
-exports.retryPayment=async (req, res) => {
-  console.log('retry payment triggering')
-  try {
-    const { orderId } = req.query;
-
-    if (!orderId) {
-      return res.redirect("/user/orders"); // Redirect if no orderId is provided
-    }
-
-    // Fetch the failed order from the database
-    const order = await Order.findById(orderId).populate("orderedItems.productId");
-
-    if (!order) {
-      return res.redirect("/user/orders"); // Redirect if the order is not found
-    }
-
-    // Repopulate the cart with the order items
-    const cartItems = order.orderedItems.map((item) => ({
-      productId: item.productId._id,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-
-    // Calculate the total amount
-    const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-    // Render the retry payment page
-    res.render("user/retryPayment", {
-      cart: cartItems,
-      totalAmount,
-      orderId,
-      user: req.user, // Pass the user details
-      address: req.user.address, // Pass the user addresses
-    });
-  } catch (error) {
-    console.error("Error in retryPayment route:", error);
-    res.redirect("/user/orders");
-  }
 };

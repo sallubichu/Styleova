@@ -6,6 +6,8 @@ const { upload, processImages } = require("../controllers/multer");
 const offerController = require("../controllers/offersController");
 const couponController = require("../controllers/couponController");
 const salesController = require("../controllers/salesController");
+const walletController=require('../controllers/walletController')
+const ledgerController=require('../controllers/ledgerController')
 
 // Route for Admin Login Page
 router.get("/admin/login", (req, res) => {
@@ -90,6 +92,8 @@ router.patch(
   Controller.cancelOrder
 );
 
+router.get("/admin/manageOrders/:orderId",adminJwtAuth, Controller.getOrderDetails);
+
 router.get("/admin/getOffers", adminJwtAuth, offerController.renderOffers);
 router.post("/admin/addOffer", adminJwtAuth, offerController.addOffer);
 router.delete(
@@ -114,14 +118,25 @@ router.put(
 );
 
 router.post(
-  "/admin/salesReport",
+  "/admin/generateSalesReport", 
   adminJwtAuth,
   salesController.generateSalesReport
 );
+
 router.get(
   "/admin/salesManagement",
   adminJwtAuth,
   salesController.getSalesReportPage
 );
+
+// Wallet History Management Routes
+router.get("/admin/wallets",adminJwtAuth, walletController.getTransactionList);           
+router.get("/admin/wallets/:transactionId", adminJwtAuth, walletController.getTransactionDetails);
+
+router.get("/admin/sales-data",adminJwtAuth, salesController.getChartData);
+router.post('/admin/generateLedger', adminJwtAuth,ledgerController.generateLedgerBook);
+
+router.get("/admin/getOrderDetails/:orderId",adminJwtAuth,Controller.getOrderDetails)
+router.post('/admin/approveReturn/:orderId',adminJwtAuth, Controller.approveReturn);
 
 module.exports = router;

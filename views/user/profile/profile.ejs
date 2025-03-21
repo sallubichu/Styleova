@@ -69,6 +69,12 @@
     padding: 0.75rem 1rem;
   }
 
+  /* Alert Styling */
+  .alert {
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
   /* Responsive Design */
   @media (max-width: 768px) {
     .profile-img {
@@ -94,12 +100,22 @@
           <a href="/user/profile" class="text-white">Profile</a>
         </h5>
       </nav>
-      <!-- Breadcrumb -->
     </div>
   </div>
 
   <section class="pt-5">
     <div class="container">
+      <!-- Flash Messages with Fallback -->
+      <% if (typeof messages !== 'undefined' && messages.success) { %>
+        <div class="alert alert-success"><%= messages.success %></div>
+      <% } %>
+      <% if (typeof messages !== 'undefined' && messages.error) { %>
+        <div class="alert alert-danger"><%= messages.error %></div>
+      <% } %>
+      <% if (typeof messages !== 'undefined' && messages.info) { %>
+        <div class="alert alert-info"><%= messages.info %></div>
+      <% } %>
+
       <div class="row">
         <!-- Sidebar -->
         <div class="col-lg-3 px-3">
@@ -135,7 +151,7 @@
                   </a>
                 </li>
                 <li>
-                  <a href="/user/viewWishlist" class="text-decoration-none text-dark d-block py-2">
+                  <a href="/user/getWishlist" class="text-decoration-none text-dark d-block py-2">
                     <button class="btn btn-secondary w-100">My Wishlist</button>
                   </a>
                 </li>
@@ -164,20 +180,19 @@
             <div class="profile-info text-center mt-3">
               <h5 id="userName"><%= user.name %></h5>
               <p id="userEmail"><%= user.email %></p>
-              
               <button class="btn btn-primary mt-2" id="editProfileBtn">Edit Profile</button>
             </div>
 
             <!-- Edit Form (Initially Hidden) -->
             <div class="edit-form mt-4" id="editForm" style="display: none;">
-              <form action="/user/profile/update" method="POST">
+              <form action="/user/profile/update" method="POST" id="editProfileForm">
                 <div class="mb-3">
                   <label class="form-label">Name</label>
-                  <input type="text" class="form-control" name="name" value="<%= user.name %>">
+                  <input type="text" class="form-control" name="name" value="<%= user.name %>" required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Email</label>
-                  <input type="email" class="form-control" name="email" value="<%= user.email %>">
+                  <input type="email" class="form-control" name="email" value="<%= user.email %>" required>
                 </div>
                 <div class="d-grid gap-2">
                   <button type="submit" class="btn btn-success">Save Changes</button>
@@ -192,9 +207,7 @@
               <p><strong>Password:</strong> 
                 <% if(user.password) { %> ****** <% } else { %> Google Signed In <% } %>
               </p>
-              
               <p><strong>Account Created On:</strong> <%= user.dateCreated.toLocaleString() %></p>
-              
             </div>
           </div>
         </div>
@@ -206,6 +219,7 @@
 <%- include('../../partials/footer') %>
 
 <script>
+  // Toggle Edit Form
   document.getElementById('editProfileBtn').addEventListener('click', function() {
     document.querySelector('.profile-info').style.display = 'none';
     document.getElementById('editForm').style.display = 'block';
@@ -214,5 +228,33 @@
   document.getElementById('cancelEditBtn').addEventListener('click', function() {
     document.querySelector('.profile-info').style.display = 'block';
     document.getElementById('editForm').style.display = 'none';
+    // Reset form to original values
+    document.querySelector('input[name="name"]').value = '<%= user.name %>';
+    document.querySelector('input[name="email"]').value = '<%= user.email %>';
+  });
+
+  // Client-side validation for white spaces and email format
+  document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+    const nameInput = document.querySelector('input[name="name"]');
+    const emailInput = document.querySelector('input[name="email"]');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Trim inputs before submission
+    nameInput.value = nameInput.value.trim();
+    emailInput.value = emailInput.value.trim();
+
+    // Validate name (non-empty after trim)
+    if (!nameInput.value) {
+      e.preventDefault();
+      alert('Name cannot be empty or just spaces.');
+      return;
+    }
+
+    // Validate email format
+    if (!emailRegex.test(emailInput.value)) {
+      e.preventDefault();
+      alert('Please enter a valid email address.');
+      return;
+    }
   });
 </script>

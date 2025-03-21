@@ -10,19 +10,9 @@
       <li><a href="/admin/products" class="active"><i class="bi bi-box-seam"></i> Products</a></li>
       <li><a href="/admin/users"><i class="bi bi-people"></i> Manage Users</a></li>
       <li><a href="/admin/manageOrders"><i class="bi bi-cart-check"></i> Orders</a></li>
-      <li>
-        <a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a>
-      </li>
-      <li>
-        <a href="/admin/salesManagement" class="active"
-          ><i class="bi bi-bar-chart-line"></i> Sales Report</a
-        >
-      </li>
-      <li>
-        <a href="/admin/getCoupons" class="active"
-          ><i class="bi bi-ticket-perforated"></i> Coupons</a
-        >
-      </li>
+      <li><a href="/admin/getOffers"><i class="bi bi-percent"></i> Manage Offers</a></li>
+      <li><a href="/admin/salesManagement"><i class="bi bi-bar-chart-line"></i> Sales Report</a></li>
+      <li><a href="/admin/getCoupons"><i class="bi bi-ticket-perforated"></i> Coupons</a></li>
     </ul>
     <li><a href="/admin/logout" class="logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
   </aside>
@@ -32,6 +22,15 @@
     <div class="header">
       <h2>Manage Products</h2>
       <a href="/admin/addproducts" class="btn btn-primary">Add Product</a>
+    </div>
+
+    <div class="mb-3">
+      <label for="limitSelect">Items per page:</label>
+      <select id="limitSelect" class="form-select d-inline-block w-auto" onchange="window.location.href='/admin/products?page=1&limit='+this.value">
+        <option value="5" <%= limit === 5 ? 'selected' : '' %>>5</option>
+        <option value="10" <%= limit === 10 ? 'selected' : '' %>>10</option>
+        <option value="20" <%= limit === 20 ? 'selected' : '' %>>20</option>
+      </select>
     </div>
 
     <!-- Product Table -->
@@ -95,10 +94,36 @@
                   </button>
                 </td>
               </tr>
-            <% }); %>
+            <% }) %>
           <% } %>
         </tbody>
       </table>
+
+      <!-- Pagination Controls (Always Visible) -->
+      <div class="pagination mt-4 d-flex justify-content-center align-items-center">
+        <!-- Previous Button -->
+        <% if (currentPage > 1) { %>
+          <a href="/admin/products?page=<%= currentPage - 1 %>&limit=<%= limit %>" class="btn btn-sm btn-secondary mx-1">Previous</a>
+        <% } else { %>
+          <button class="btn btn-sm btn-secondary mx-1" disabled>Previous</button>
+        <% } %>
+
+        <!-- Page Numbers -->
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <% if (i === currentPage) { %>
+            <span class="btn btn-sm btn-primary mx-1"><%= i %></span>
+          <% } else { %>
+            <a href="/admin/products?page=<%= i %>&limit=<%= limit %>" class="btn btn-sm btn-outline-primary mx-1"><%= i %></a>
+          <% } %>
+        <% } %>
+
+        <!-- Next Button -->
+        <% if (currentPage < totalPages) { %>
+          <a href="/admin/products?page=<%= currentPage + 1 %>&limit=<%= limit %>" class="btn btn-sm btn-secondary mx-1">Next</a>
+        <% } else { %>
+          <button class="btn btn-sm btn-secondary mx-1" disabled>Next</button>
+        <% } %>
+      </div>
     </div>
   </main>
 </div>
@@ -121,13 +146,13 @@
             <input type="number" class="form-control" id="stockLarge" name="stockLarge" placeholder="Large Stock">
           </div>
           <button type="submit" class="btn btn-warning">Update Stock</button>
-          
         </form>
       </div>
     </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     // Toggle listing functionality
@@ -283,11 +308,18 @@
   .nav a i { margin-right: 10px; font-size: 20px; }
   .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
   .content { flex-grow: 1; padding: 40px; }
-  .header h2 { color: #2c3e50; margin-bottom: 20px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .header h2 { color: #2c3e50; }
   .table-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); }
   .user-table { width: 100%; border-collapse: collapse; }
   .user-table th { background: #2c3e50; color: white; }
-  .avatar { width: 40px; height: 40px; border-radius: 50%; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
   .toggle-btn { font-size: 30px; cursor: pointer; }
   .toggle-btn:hover { color: #007bff; }
+  .pagination { margin-top: 20px; display: flex; justify-content: center; align-items: center; }
+  .pagination .btn { min-width: 40px; text-align: center; }
+  .pagination .btn-primary { background-color: #2c3e50; border-color: #2c3e50; }
+  .pagination .btn-outline-primary { color: #2c3e50; border-color: #2c3e50; }
+  .pagination .btn-outline-primary:hover { background-color: #2c3e50; color: white; }
+  .pagination .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

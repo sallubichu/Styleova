@@ -2,6 +2,7 @@
 
 <head>
     <style>
+        /* Your existing styles remain unchanged */
         /* Modern Gradient Background */
         .gradient-custom {
             background: linear-gradient(135deg, #6a11cb, #2575fc);
@@ -119,6 +120,28 @@
             margin: 5px;
         }
 
+        /* Pagination Styling */
+        .pagination {
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .page-item.active .page-link {
+            background-color: #6a11cb;
+            border-color: #6a11cb;
+        }
+
+        .page-link {
+            color: #6a11cb;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        .page-link:hover {
+            color: #2575fc;
+            background-color: #e9ecef;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .nav-tabs .nav-link {
@@ -144,7 +167,6 @@
                 <a href="/user/orders" class="text-white">My Orders</a>
             </h5>
         </nav>
-        <!-- Breadcrumb -->
     </div>
 </div>
 
@@ -172,7 +194,7 @@
                             <li><a href="/user/profile" class="text-decoration-none text-primary d-block py-2"><button class="btn btn-secondary w-100">Profile</button></a></li>
                             <li><a href="/user/address" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">Address</button></a></li>
                             <li><a href="/user/orders" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-primary w-100">My Orders</button></a></li>
-                            <li><a href="/user/viewWishlist" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
+                            <li><a href="/user/getWishlist" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">My Wishlist</button></a></li>
                             <li><a href="/user/wallethistory" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">Wallet History</button></a></li>
                             <li><a href="/user/forgot" class="text-decoration-none text-dark d-block py-2"><button class="btn btn-secondary w-100">Change Password</button></a></li>
                         </ul>
@@ -199,98 +221,102 @@
                                             <div class="d-flex justify-content-center my-5 border">
                                                 <h3>No orders yet</h3>
                                             </div>
-                                        <% } else { orders.forEach((order, i) => { %>
-                                            <div class="col-md-12 mb-3">
-                                                <div class="card shadow">
-                                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                                        <h5 class="card-title text-muted m-2">Order <%= i + 1 %></h5>
-                                                        <% if (order.status === "Pending" && order.paymentStatus === "Completed") { %>
-                                                            <p class="text-warning m-0 border-left border-secondary p-2">Status: Order Placed</p>
-                                                            <button class="btn btn-warning cancelButton" id="pendingOrderId" data-orderId="<%= order._id %>">Cancel</button>
-                                                        <% } else if (order.status === "Cancelled") { %>
-                                                            <p class="text-danger border-left border-danger m-0 p-2">Status: Cancelled</p>
-                                                        <% } else if (order.status === "Pending" && order.paymentStatus === "Failed") { %>
-                                                            <p class="text-warning m-0 border-left border-secondary p-2">Status: Payment Pending</p>
-                                                            <button class="btn btn-success" id="retryPayment" data-orderId="<%= order._id %>" data-amount="<%= order.totalAmount %>">Retry Payment</button>
-                                                            <button class="btn btn-warning cancelButton" id="pendingOrderId" data-orderId="<%= order._id %>">Cancel</button>
-                                                        <% } else if (order.status === "Delivered") { %>
-                                                            <p class="text-success m-0">Status: Delivered</p>
-                                                            <a href="/user/invoice/<%= order._id %>">
-                                                                <button class="btn btn-success deliveredOrderId">Download Invoice</button>
-                                                            </a>
-                                                        <% } %>
-                                                    </div>
-                                                    <!-- Add this code at the bottom of your EJS file, after the orders loop -->
-<div class="d-flex justify-content-center mt-5">
-    <nav aria-label="Page navigation">
-      <ul class="pagination">
-        <% if (currentPage > 1) { %>
-          <li class="page-item">
-            <a class="page-link" href="/user/orders?page=<%= currentPage - 1 %>" aria-label="Previous">
-              <span aria-hidden="true">&laquo;</span>
-            </a>
-          </li>
-        <% } %>
-  
-        <% for (let i = 1; i <= totalPages; i++) { %>
-          <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-            <a class="page-link" href="/user/orders?page=<%= i %>"><%= i %></a>
-          </li>
-        <% } %>
-  
-        <% if (currentPage < totalPages) { %>
-          <li class="page-item">
-            <a class="page-link" href="/user/orders?page=<%= currentPage + 1 %>" aria-label="Next">
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-        <% } %>
-      </ul>
-    </nav>
-  </div>
-                                                    <div class="card-body">
-                                                        <div class="d-flex">
-                                                            <span class="m-1 font-weight-bold">Order Date: <%= new Date(order.orderedDate).toDateString() %></span>
+                                        <% } else { %>
+                                            <% orders.forEach((order, i) => { %>
+                                                <div class="col-md-12 mb-3">
+                                                    <div class="card shadow">
+                                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                                            <h5 class="card-title text-muted m-2">Order <%= i + 1 %></h5>
+                                                            <% if (order.status === "Pending" && order.paymentStatus === "Completed") { %>
+                                                                <p class="text-warning m-0 border-left border-secondary p-2">Status: Order Placed</p>
+                                                                <button class="btn btn-warning cancelButton" data-orderId="<%= order._id %>">Cancel</button>
+                                                            <% } else if (order.status === "Cancelled") { %>
+                                                                <p class="text-danger border-left border-danger m-0 p-2">Status: Cancelled</p>
+                                                            <% } else if (order.status === "Pending" && order.paymentStatus === "Failed") { %>
+                                                                <p class="text-warning m-0 border-left border-secondary p-2">Status: Payment Pending</p>
+                                                                <button class="btn btn-success retryPayment" data-orderId="<%= order._id %>" data-amount="<%= order.totalAmount %>">Retry Payment</button>
+                                                                <button class="btn btn-warning cancelButton" data-orderId="<%= order._id %>">Cancel</button>
+                                                            <% } else if (order.status === "Shipping") { %>
+                                                                <p class="text-primary m-0 border-left border-primary p-2">Status: Shipping</p>
+                                                            <% } else if (order.status === "Delivered") { %>
+                                                                <p class="text-success m-0 border-left border-success p-2">Status: Delivered</p>
+                                                                <a href="/user/invoice/<%= order._id %>">
+                                                                    <button class="btn btn-success">Download Invoice</button>
+                                                                </a>
+                                                            <% } else { %>
+                                                                <p class="text-muted m-0 border-left border-secondary p-2">Status: <%= order.status %></p>
+                                                            <% } %>
                                                         </div>
-                                                        <div class="d-flex">
-                                                            <span class="m-1 font-weight-bold">Total Items: <%= order.orderedItems.length %></span>
-                                                        </div>
-                                                        <% order.orderedItems.forEach((product, j) => { %>
-                                                            <div class="border-left border-5 border-secondary my-3 p-3">
-                                                                <div class="row">
-                                                                    <div class="col-8">
-                                                                        <h5 class="justify-content-center d-flex">Product <%= j + 1 %></h5>
-                                                                        <% if (product.productId) { %>
-                                                                            <p>Product Name: <%= product.productId.name %></p>
-                                                                            <p>Product Quantity: <%= product.quantity %></p>
-                                                                            <p>Product Price: <%= product.price %></p>
-                                                                        <% } else { %>
-                                                                            <p class="text-danger">This product does not exist anymore</p>
-                                                                        <% } %>
-                                                                    </div>
-                                                                    <div class="col-4">
-                                                                        <% if (product.productId && product.productId.images && product.productId.images.length > 0) { %>
-                                                                            <img class="rounded-2 w-100" src="/<%= product.productId.images[0] %>" />
-                                                                        <% } else { %>
-                                                                            <p class="text-muted">No image available</p>
-                                                                        <% } %>
+                                                        <div class="card-body">
+                                                            <div class="d-flex">
+                                                                <span class="m-1 font-weight-bold">Order Date: <%= new Date(order.orderedDate).toDateString() %></span>
+                                                            </div>
+                                                            <div class="d-flex">
+                                                                <span class="m-1 font-weight-bold">Total Items: <%= order.orderedItems.length %></span>
+                                                            </div>
+                                                            <% order.orderedItems.forEach((product, j) => { %>
+                                                                <div class="border-left border-5 border-secondary my-3 p-3">
+                                                                    <div class="row">
+                                                                        <div class="col-8">
+                                                                            <h5 class="justify-content-center d-flex">Product <%= j + 1 %></h5>
+                                                                            <% if (product.productId) { %>
+                                                                                <p>Product Name: <%= product.productId.name %></p>
+                                                                                <p>Product Quantity: <%= product.quantity %></p>
+                                                                                <p>Product Price: <%= product.price %></p>
+                                                                            <% } else { %>
+                                                                                <p class="text-danger">This product does not exist anymore</p>
+                                                                            <% } %>
+                                                                        </div>
+                                                                        <div class="col-4">
+                                                                            <% if (product.productId && product.productId.images && product.productId.images.length > 0) { %>
+                                                                                <img class="rounded-2 w-100" src="/<%= product.productId.images[0] %>" alt="Product Image" />
+                                                                            <% } else { %>
+                                                                                <p class="text-muted">No image available</p>
+                                                                            <% } %>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+                                                            <% }) %>
+                                                            <div class="d-flex">
+                                                                <span class="m-1 font-weight-bold">Payment Method: <%= order.paymentMethod %></span>
                                                             </div>
-                                                        <% }) %>
-                                                        <div class="d-flex">
-                                                            <span class="m-1 font-weight-bold">Payment Method: <%= order.paymentMethod %></span>
+                                                            <div class="d-flex">
+                                                                <span class="m-1 font-weight-bold">Total Amount: <%= order.totalAmount %></span>
+                                                            </div>
+                                                            <a href="/user/viewOrder/<%= order._id %>">
+                                                                <button class="btn btn-primary mt-3">View Order</button>
+                                                            </a>
                                                         </div>
-                                                        <div class="d-flex">
-                                                            <span class="m-1 font-weight-bold">Total Amount: <%= order.totalAmount %></span>
-                                                        </div>
-                                                        <a href="/user/viewOrder/<%= order._id %>">
-                                                            <button class="btn btn-primary mt-3">View Order</button>
-                                                        </a>
                                                     </div>
                                                 </div>
+                                            <% }) %>
+                                            <!-- Single Pagination for All Orders -->
+                                            <div class="d-flex justify-content-center mt-5">
+                                                <nav aria-label="Page navigation">
+                                                    <ul class="pagination">
+                                                        <% if (currentPage > 1) { %>
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="/user/orders?page=<%= currentPage - 1 %>&limit=<%= limit %>" aria-label="Previous">
+                                                                    <span aria-hidden="true">«</span>
+                                                                </a>
+                                                            </li>
+                                                        <% } %>
+                                                        <% for (let i = 1; i <= totalPages; i++) { %>
+                                                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                                                <a class="page-link" href="/user/orders?page=<%= i %>&limit=<%= limit %>"><%= i %></a>
+                                                            </li>
+                                                        <% } %>
+                                                        <% if (currentPage < totalPages) { %>
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="/user/orders?page=<%= currentPage + 1 %>&limit=<%= limit %>" aria-label="Next">
+                                                                    <span aria-hidden="true">»</span>
+                                                                </a>
+                                                            </li>
+                                                        <% } %>
+                                                    </ul>
+                                                </nav>
                                             </div>
-                                        <% }) } %>
+                                        <% } %>
                                     </div>
                                 </div>
                             </div>
@@ -304,9 +330,11 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // Existing Cancel Button Logic (unchanged since it’s working)
         document.body.addEventListener('click', async (event) => {
             if (event.target && event.target.classList.contains('cancelButton')) {
                 const id = event.target.getAttribute('data-orderId');
@@ -351,53 +379,90 @@
             }
         });
 
-        document.querySelectorAll('#retryPayment').forEach(button => {
-            button.addEventListener('click', async () => {
-                const orderId = this.getAttribute("data-orderId");
-            const amount = this.getAttribute("data-amount");
-            fetch("/user/retryPayment?orderId=" + orderId + "&amount=" + amount, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                credentials: "include"  // To include cookies/session if required
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = data.paymentUrl;  // Redirect to payment gateway
-                } else {
-                    alert("Payment retry failed. Please try again.");
+        // Updated Retry Payment Logic
+        document.querySelectorAll('.retryPayment').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderId = event.target.getAttribute('data-orderId');
+                const amount = event.target.getAttribute('data-amount');
+
+                try {
+                    const response = await fetch(`/user/retryPayment?orderId=${orderId}&amount=${amount}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Open Razorpay checkout
+                        const options = {
+                            key: data.key, // Razorpay key from backend
+                            amount: data.amount * 100, // Convert to paise
+                            currency: 'INR',
+                            name: 'Styleova',
+                            description: `Retry Payment for Order ${orderId}`,
+                            order_id: data.paymentUrl, // Razorpay order ID
+                            handler: async function (response) {
+                                // Handle successful payment
+                                const paymentData = {
+                                    orderId: orderId,
+                                    paymentId: response.razorpay_payment_id,
+                                };
+                                const successResponse = await fetch('/user/paymentSuccess', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(paymentData),
+                                    credentials: 'include',
+                                });
+                                const successData = await successResponse.json();
+                                if (successData.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Payment Successful',
+                                        text: 'Your payment has been completed.',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => window.location.reload());
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Payment Failed',
+                                        text: 'Payment was processed but status update failed.',
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            },
+                            prefill: {
+                                name: '<%= user ? user.name : "Guest" %>',
+                                email: '<%= user ? user.email : "" %>',
+                            },
+                            theme: {
+                                color: '#6a11cb',
+                            },
+                        };
+                        const rzp = new Razorpay(options);
+                        rzp.open();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Retry Failed',
+                            text: data.message || 'Payment retry failed. Please try again.',
+                            confirmButtonText: 'OK',
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred during payment retry.',
+                        confirmButtonText: 'OK',
+                    });
                 }
-            })
-            .catch(error => console.error("Error:", error));
-        });
+            });
         });
     });
-
-   
-  
-
 </script>
-
-<style>
-    /* Pagination Styling */
-.pagination {
-  margin: 20px 0;
-}
-
-.page-item.active .page-link {
-  background-color: #6a11cb;
-  border-color: #6a11cb;
-}
-
-.page-link {
-  color: #6a11cb;
-}
-
-.page-link:hover {
-  color: #2575fc;
-}
-</style>
 
 <%- include('../../partials/footer') %>

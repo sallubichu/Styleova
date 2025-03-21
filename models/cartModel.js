@@ -34,6 +34,14 @@ const cartSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  couponApplied: { // Added
+    type: Boolean,
+    default: false,
+  },
+  couponCode: {   // Added
+    type: String,
+    default: null,
+  },
 });
 
 const Cart = mongoose.model("Cart", cartSchema);

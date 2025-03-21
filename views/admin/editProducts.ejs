@@ -70,6 +70,25 @@
           <input type="file" name="images" class="form-control" id="formImages" multiple>
         </div>
 
+        <!-- Stock Size Inputs -->
+        <div class="mb-3">
+          <label class="form-label">Stock by Size</label>
+          <div class="row">
+            <div class="col">
+              <label for="stockSmall" class="form-label">Small</label>
+              <input type="number" class="form-control" id="stockSmall" name="stockSmall" min="0" value="<%= data.stock.Small %>" required>
+            </div>
+            <div class="col">
+              <label for="stockMedium" class="form-label">Medium</label>
+              <input type="number" class="form-control" id="stockMedium" name="stockMedium" min="0" value="<%= data.stock.Medium %>" required>
+            </div>
+            <div class="col">
+              <label for="stockLarge" class="form-label">Large</label>
+              <input type="number" class="form-control" id="stockLarge" name="stockLarge" min="0" value="<%= data.stock.Large %>" required>
+            </div>
+          </div>
+        </div>
+
         <div class="mb-3">
           <button type="submit" class="btn btn-primary w-100">Update Product</button>
         </div>
@@ -78,19 +97,20 @@
   </main>
 </div>
 
+<%- include('../partials/footer') %>
+
 <script>
 let deletedImages = [];
 
 function removeImage(index) {
   const imageElement = document.getElementById(`imageContainer-${index}`);
   if (imageElement) {
-    const imageSrc = imageElement.querySelector("img").getAttribute("src"); 
-    const imageName = imageSrc.split("/").slice(-2).join("/"); // Get correct path
-    deletedImages.push(imageName); // Store the image path
-    imageElement.remove(); // Remove from UI
+    const imageSrc = imageElement.querySelector("img").getAttribute("src");
+    const imageName = imageSrc.split("/").slice(-2).join("/"); 
+    deletedImages.push(imageName); 
+    imageElement.remove(); 
   }
 }
-
 
 function validateForm(event) {
   event.preventDefault();
@@ -102,9 +122,28 @@ function validateForm(event) {
   const category = document.getElementById("formCategory").value;
   const imageInput = document.getElementById("formImages");
   const rate = document.getElementById("formRate").value;
+  const stockSmall = document.getElementById("stockSmall").value.trim();
+  const stockMedium = document.getElementById("stockMedium").value.trim();
+  const stockLarge = document.getElementById("stockLarge").value.trim();
 
-  if (!name || !description || !category) {
+  // Client-side validation
+  if (!name || !description || !category || !rating || !rate || !stockSmall || !stockMedium || !stockLarge) {
     Swal.fire({ icon: "error", title: "Validation Error", text: "All fields are required!" });
+    return;
+  }
+
+  if (parseFloat(rating) < 1 || parseFloat(rating) > 5) {
+    Swal.fire({ icon: "error", title: "Validation Error", text: "Rating must be between 1 and 5!" });
+    return;
+  }
+
+  if (parseFloat(rate) < 0) {
+    Swal.fire({ icon: "error", title: "Validation Error", text: "Rate cannot be negative!" });
+    return;
+  }
+
+  if (parseInt(stockSmall) < 0 || parseInt(stockMedium) < 0 || parseInt(stockLarge) < 0) {
+    Swal.fire({ icon: "error", title: "Validation Error", text: "Stock quantities cannot be negative!" });
     return;
   }
 
@@ -116,8 +155,10 @@ function validateForm(event) {
   formData.append("category", category);
   formData.append("deleteImages", JSON.stringify(deletedImages));
   formData.append("rate", rate);
+  formData.append("stockSmall", stockSmall);
+  formData.append("stockMedium", stockMedium);
+  formData.append("stockLarge", stockLarge);
 
-  // Append new image files
   if (imageInput.files.length > 0) {
     for (let i = 0; i < imageInput.files.length; i++) {
       formData.append("images", imageInput.files[i]);
@@ -126,9 +167,15 @@ function validateForm(event) {
 
   fetch("/admin/editProduct", {
     method: "PATCH",
-    body: formData, // Use FormData instead of JSON
+    body: formData,
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      // Throw the response to catch it in the next .catch block with the error message
+      return response.json().then(err => { throw err; });
+    }
+    return response.json();
+  })
   .then(data => {
     if (data.message === "Product updated successfully") {
       Swal.fire({ icon: "success", title: "Success", text: data.message })
@@ -139,92 +186,185 @@ function validateForm(event) {
   })
   .catch(error => {
     console.error("Error:", error);
-    Swal.fire({ icon: "error", title: "Error", text: "An error occurred while updating the product." });
+    // Display the specific error message from the server, including invalid file type errors
+    Swal.fire({ 
+      icon: "error", 
+      title: "Error", 
+      text: error.message || "An error occurred while updating the product." 
+    });
   });
 }
-
-
-
 </script>
 
-<%- include('../partials/footer') %>
-
-
-
-
-<!-- Custom Styles -->
 <style>
-    .sidebar .logout {
-  margin-top: auto;  /* This will push the logout button to the bottom */
-  background: #e74c3c; /* Optional: Customize the background color */
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
-}
-#imagePreview {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 15px; /* Space between images */
-  overflow-x: auto; /* Allows scrolling if images exceed the container width */
-  padding: 10px 0;
-}
+  /* Body and root styling */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
-.image-container {
-  display: flex;
-  flex-direction: column; /* Stack image and button */
-  align-items: center; /* Center items */
-  gap: 5px; /* Space between image and button */
-}
+  /* Wrapper for the entire page */
+  .page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Ensures the wrapper takes full viewport height */
+  }
 
-.preview-img {
-  width: 100px; /* Adjust as needed */
-  height: 100px;
-  object-fit: cover;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-}
+  /* Admin Container */
+  .admin-container {
+    display: flex;
+    flex: 1; /* Allows it to grow and push footer down */
+    background: #f5f5f5;
+  }
 
-.delete-btn {
-  background: red;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: 0.3s;
-}
+  /* Sidebar */
+  .sidebar {
+    width: 250px;
+    background: #2c3e50;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
 
-.delete-btn:hover {
-  background: darkred;
-}
+  .sidebar .logo {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 30px;
+  }
 
+  .nav {
+    list-style: none;
+    padding: 0;
+  }
 
-.sidebar .logout:hover {
-  background: #c0392b; /* Optional: Darken on hover */
-}
-.small-img {
+  .nav li {
+    margin: 10px 0;
+  }
+
+  .nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 5px;
+    transition: 0.3s;
+  }
+
+  .nav a i {
+    margin-right: 10px;
+    font-size: 20px;
+  }
+
+  .nav a:hover,
+  .nav a.active {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .sidebar .logout {
+    margin-top: auto;
+    background: #e74c3c;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+  }
+
+  .sidebar .logout:hover {
+    background: #c0392b;
+  }
+
+  /* Main Content */
+  .content {
+    flex-grow: 1;
+    padding: 40px;
+  }
+
+  .header h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+
+  .form-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-container .form-label {
+    font-weight: bold;
+  }
+
+  .form-container .row {
+    display: flex;
+    gap: 15px;
+  }
+
+  .form-container .col {
+    flex: 1;
+  }
+
+  /* Image Preview */
+  #imagePreview {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 15px;
+    overflow-x: auto;
+    padding: 10px 0;
+  }
+
+  .image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .preview-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+  }
+
+  .delete-btn {
+    background: red;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: 0.3s;
+  }
+
+  .delete-btn:hover {
+    background: darkred;
+  }
+
+  .small-img {
     width: 100px;
     height: auto;
     display: block;
     margin-bottom: 10px;
   }
 
-  .admin-container { display: flex; height: 100vh; background: #f5f5f5; }
-  .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; }
-  .sidebar .logo { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 30px; }
-  .nav { list-style: none; padding: 0; }
-  .nav li { margin: 10px 0; }
-  .nav a { color: white; text-decoration: none; font-size: 16px; display: flex; align-items: center; padding: 12px; border-radius: 5px; transition: 0.3s; }
-  .nav a i { margin-right: 10px; font-size: 20px; }
-  .nav a:hover, .nav a.active { background: rgba(255, 255, 255, 0.2); }
-  .content { flex-grow: 1; padding: 40px; }
-  .header h2 { color: #2c3e50; margin-bottom: 20px; }
-  .form-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
-  .form-container .form-label { font-weight: bold; }
+  /* Footer (assuming a basic footer structure) */
+  footer {
+    background: #2c3e50;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    flex-shrink: 0; /* Prevents footer from shrinking */
+  }
 </style>
